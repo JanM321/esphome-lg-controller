@@ -1,0 +1,54 @@
+esphome:
+  name: ${deviceid}
+  friendly_name: ${devicename}
+  includes:
+    - lg-controller.h
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+uart:
+  - id: ac_serial
+    tx_pin: GPIO25
+    rx_pin: GPIO26 # Keep in sync with RxPin in lg-controller.h
+    baud_rate: 104
+
+sensor:
+  - id: temperature_sensor
+    platform: homeassistant
+    internal: true
+    entity_id: ${temperature_sensor_entity_id}
+  - platform: custom
+    lambda: |-
+      return ((LgController*)id(${deviceid}))->get_sensors();
+    sensors:
+      - name: Error Code
+
+binary_sensor:
+  - platform: custom
+    lambda: |-
+      return ((LgController*)id(${deviceid}))->get_binary_sensors();
+    binary_sensors:
+      - name: Defrost
+      - name: Preheat
+      - name: Outdoor Unit
+
+switch:
+  - platform: custom
+    lambda: |-
+      return ((LgController*)id(${deviceid}))->get_switches();
+    switches:
+      - name: Air Purifier
+      - name: Internal Thermistor
+
+climate:
+  - platform: custom
+    lambda: |-
+      auto* controller = new LgController(id(ac_serial), id(temperature_sensor));
+      App.register_component(controller);
+      return {controller};
+    climates:
+      - name: ""
+        id: ${deviceid}
