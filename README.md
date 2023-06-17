@@ -2,6 +2,12 @@
 
 ESPHome component implementing a custom wall controller for LG Air Conditioners. This allows basic control of an indoor unit from Home Assistant. It also optionally replaces the use of the unit's internal thermistor with a Home Assistant temperature sensor.
 
+This has some advantages compared to the [LG ThinQ integration](https://github.com/ollo69/ha-smartthinq-sensors) for Home Assistant:
+* Ability to use an external sensor for room temperature.
+* Does not depend on LG's ThinQ cloud service.
+* No annoying sounds from the AC unit when changing settings through the controller.
+* More settings and information available, although some settings like display light on/off are available in ThinQ but aren't passed to the controller as far as I can tell.
+
 ![Controller PCB in enclosure](images/controller2.jpg) ![Screenshot of custom controller in Home Assistant](images/controller3.png)
 
 # Protocol and Compatibility
