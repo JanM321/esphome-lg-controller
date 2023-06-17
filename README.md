@@ -2,7 +2,7 @@
 
 ESPHome component implementing a custom wall controller for LG Air Conditioners. This allows basic control of an indoor unit from Home Assistant. It also optionally replaces the use of the unit's internal thermistor with a Home Assistant temperature sensor.
 
-![Screenshot of custom controller in Home Assistant](images/controller3.png) ![Controller PCB in enclosure](images/controller2.jpg)
+![Controller PCB in enclosure](images/controller2.jpg) ![Screenshot of custom controller in Home Assistant](images/controller3.png)
 
 # Protocol and Compatibility
 There seem to be two different protocols that LG AC units and wall controllers use to communicate: 
