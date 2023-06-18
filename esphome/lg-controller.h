@@ -271,10 +271,17 @@ private:
         send_buf_[3] = last_recv_status_[3];
         send_buf_[4] = last_recv_status_[4];
 
+        float target = this->target_temperature;
+        if (target < 18) {
+            target = 18;
+        } else if (target > 30) {
+            target = 30;
+        }
+
         // Byte 5. Unchanged except for the low bit which indicates the target temperature has a
         // 0.5 fractional part.
         send_buf_[5] = last_recv_status_[5] & ~0x1;
-        if (this->target_temperature - uint8_t(this->target_temperature) == 0.5) {
+        if (target - uint8_t(target) == 0.5) {
             send_buf_[5] |= 0x1;
         }
 
@@ -291,13 +298,6 @@ private:
             // reasonable.
             thermistor = ThermistorSetting::Unit;
             temp = 20;
-        }
-        float target = this->target_temperature;
-        if (target < 18) {
-            target = 18;
-        }
-        if (target > 30) {
-            target = 30;
         }
         send_buf_[6] = (thermistor << 4) | ((uint8_t(target) - 15) & 0xf);
         send_buf_[7] = (last_recv_status_[7] & 0xC0) | uint8_t((temp - 10) * 2);
@@ -351,8 +351,13 @@ private:
 
         defrost_.publish_state(buffer[3] & 0x4);
         preheat_.publish_state(buffer[3] & 0x8);
-        outdoor_.publish_state(buffer[5] & 0x4);
         error_code_.publish_state(buffer[11]);
+
+        // When turning on the outdoor unit, the AC sometimes reports ON => OFF => ON within one
+        // second. No big deal but it causes noisy state changes in HA. Only report OFF if we've
+        // seen it twice in a row. This is fine because the unit sends each message at least twice
+        // anyway.
+        outdoor_.publish_state((buffer[5] & 0x4) || (last_recv_status_[5] & 0x4));
 
         float unit_temp = float(buffer[7] & 0x3F) / 2 + 10;
         if (this->current_temperature != unit_temp) {
