@@ -15,6 +15,6 @@
 | U6 | Traco Power TSRN 1-2433 (3.3V DC/DC converter) | - |
 
 ## Other
-* Espressif ESP32-DEVKITC-32E
+* Espressif ESP32-DEVKITC-32E (with ESP32-WROOM-32E module)
 * Adafruit 4873, 2.5mm Pitch 3-pin JST XH Compatible cable
 * Adafruit 2359, Raspberry Pi A+ Case - Smoke Base w/ Clear Top
