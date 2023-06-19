@@ -159,7 +159,8 @@ Type 0xA messages store more advanced settings and are only sent when the AC is 
 | 1 | unit address (see installer setting 2) |
 | 2-6 | fan speeds for slow/low/med/high/power (see installer setting 3) |
 | 7-8 | vertical vane positions from 1 to 6: 0x5555 for 4 vanes set to position 5 | 
-| 9 | auto change temperature setting 1-6, other bits unknown |
+| 9 | 0000_0XXX: auto change temperature setting 1-6 |
+|   | X000_0000: auxiliary heater, installer setting 25 (0: not installed, 1: installed) |
 | 10 | unknown |
 | 11 | 0000_000X: dry contact mode installer setting 9 (1: auto) |
 |    | 0000_00X0: zone state installer setting 11 (0: variable, 1: fixed) |
@@ -212,3 +213,4 @@ Byte 12 controls some functions like mosquito away.
 
 ## Types 0xD and 0xE
 My unit sends these after power on. The wall controller uses them for some installer settings. Almost all bytes are zero.
+
