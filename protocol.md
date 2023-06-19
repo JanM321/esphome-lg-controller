@@ -197,7 +197,7 @@ Maybe two different timers or (temperature) sensors? It's hard for me to figure 
 |   | X000_0000: function setting for group control, installer setting 19 (0: not in use, 1: in use) |
 | 7 | unknown |
 | 8 | unknown |
-| 9 | unknown |
+| 9 | 000X_0000: refrigerant leak detector, installer setting 29 (0: not installed, 1: installed) |
 | 10| unknown |
 | 11| 0000_XXXX: emergency heater, installer setting 18, low ambient heating operation (0-15) |
 | 12 | Checksum |
