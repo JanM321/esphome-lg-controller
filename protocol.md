@@ -190,6 +190,12 @@ Maybe two different timers or (temperature) sensors? It's hard for me to figure 
 | 4 | unknown |
 | 5 | unknown |
 | 6 | 0000_0X00: centrigrade control, installer setting 17 (0: 1C, 1: 0.5C) |
+|   | 0X00_0000: emergency heater, installer setting 18, fan speed (0: fan off, 1: fan on) |
+| 7 | unknown |
+| 8 | unknown |
+| 9 | unknown |
+| 10| unknown |
+| 11| 0000_XXXX: emergency heater, installer setting 18, low ambient heating operation (0-15) |
 | 12 | Checksum |
 
 ## Type 0xC
