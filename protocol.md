@@ -196,8 +196,10 @@ Maybe two different timers or (temperature) sensors? It's hard for me to figure 
 |   | 0X00_0000: emergency heater, installer setting 18, fan speed (0: fan off, 1: fan on) |
 |   | X000_0000: function setting for group control, installer setting 19 (0: not in use, 1: in use) |
 | 7 | 0X00_0000: indoor unit Wifi Access Point (AP) mode |
-| 8 | unknown |
-| 9 | 000X_0000: refrigerant leak detector, installer setting 29 (0: not installed, 1: installed) |
+| 8 | 0000_XXXX: model info, outdoor unit (see table in manual) |
+|   | XXXX_0000: model info, indoor unit (see table in manual) |
+| 9 | 0000_XXXX: model info, capacity field (see table in manual) |
+|   | 000X_0000: refrigerant leak detector, installer setting 29 (0: not installed, 1: installed) |
 |   | XX00_0000: fan operation in cooling mode and thermal off conditions, installer setting 35 (0: fan low, 1: fan off, 2: fan setting) |
 | 10| 0000_XXXX: static pressure step, installer setting 32 (0-11) |
 | 11| 0000_XXXX: emergency heater, installer setting 18, low ambient heating operation (0-15) |
