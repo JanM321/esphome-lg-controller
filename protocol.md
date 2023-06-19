@@ -161,8 +161,8 @@ Type 0xA messages store more advanced settings and are only sent when the AC is 
 | 7-8 | vertical vane positions from 1 to 6: 0x5555 for 4 vanes set to position 5 | 
 | 9 | auto change temperature setting 1-6, other bits unknown |
 | 10 | unknown |
-| 11 | 0000_000X: dry contact mode installer setting (1: auto) |
-|    | 0000_00X0: unknown |
+| 11 | 0000_000X: dry contact mode installer setting 9 (1: auto) |
+|    | 0000_00X0: zone state installer setting 11 (0: variable, 1: fixed) |
 |    | 0000_0X00: robot clean auto |
 |    | 0000_X000: auto clean enabled |
 |    | XXXX_0000: unknown |
@@ -180,6 +180,12 @@ CB.00.00.85.87.FF...
 CB.00.00.78.78.FF...
 ```
 Maybe two different timers or (temperature) sensors? It's hard for me to figure out because my unit doesn't send these regularly.
+
+| Byte | Description |
+| --- | --- |
+| 0 | Message type, 0xAB or 0xCB |
+| 1 | |  |
+| 12 | Checksum |
 
 ## Type 0xC
 The wall controller sends these regularly and apparently some AC units do this too, but I've never seen this from my unit. Maybe this is only used by single-split systems.
