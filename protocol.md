@@ -69,7 +69,8 @@ Format:
 |   | 00XX_0000: thermistor installer setting (0: unit, 1: controller, 2: 2TH) |
 |   | XX00_0000: ceiling height installer setting (0: medium, 1: low, 2: high, 3: very high) |
 | 7 | 00XX_XXXX: `(room_temperature - 10) * 2` (example: 27 => `27 / 2 + 10` => 23.5C) |
-|   | XX00_0000: unknown |
+|   | 0X00_0000: set by AC when any indoor unit is in cooling mode |
+|   | X000_0000: set by AC when any indoor unit is in heating mode |
 | 8 | used for reservation data and other things (see below) |
 | 9 | used for reservation data and other things (see below) |
 | 10 | 0000_000X: set temporarily for installer setting 1 (test run) |
@@ -127,8 +128,8 @@ Format:
 |   | 000X_0000: medium-high fan option |
 |   | 00X0_0000: minimum cooling target temperature is 16 instead of 18 |
 |   | XX00_0000: unknown |
-| 7 | 0000_0X00: auxiliary heater installer setting |
-|   | X000_0000: unknown installer setting 15 |
+| 7 | 0000_0X00: auxiliary heater, installer setting |
+|   | X000_0000: over heating, installer setting 15 |
 |   | other bits unknown but seem related to zones |
 | 8 | 0000_000X: unknown installer setting 16 |
 |   | 0000_00X0: centrigrade installer setting (0.5C or 1C) |
