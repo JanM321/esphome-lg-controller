@@ -187,6 +187,7 @@ Maybe two different timers or (temperature) sensors? It's hard for me to figure 
 | 0 | Message type, 0xAB or 0xCB |
 | 1 | | unknown |
 | 2 | 000X_X000: over heat, installer setting 15 (0: default, 1: 4C/6C, 2: 2C/4C, 3: -1C/1C). Manual also has 4: -0.5C/0.5C but my controller doesn't. |
+|   | XX00_0000: over cooling, installer setting 27 (0: 0.5C/-0.5C, 1: 6C/4C, 2: 4C/2C, 3: 1C/-1C) |
 | 3 | unknown |
 | 4 | unknown |
 | 5 | unknown |
