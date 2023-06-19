@@ -198,7 +198,7 @@ Maybe two different timers or (temperature) sensors? It's hard for me to figure 
 | 7 | unknown |
 | 8 | unknown |
 | 9 | 000X_0000: refrigerant leak detector, installer setting 29 (0: not installed, 1: installed) |
-|   | XX00_0000: fan operation in cooling mode and thermal off conditions (0: fan low, 1: fan off, 2: fan setting) |
+|   | XX00_0000: fan operation in cooling mode and thermal off conditions, installer setting 35 (0: fan low, 1: fan off, 2: fan setting) |
 | 10| 0000_XXXX: static pressure step, installer setting 32 (0-11) |
 | 11| 0000_XXXX: emergency heater, installer setting 18, low ambient heating operation (0-15) |
 | 12 | Checksum |
