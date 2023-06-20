@@ -72,6 +72,7 @@ Format:
 |   | 0X00_0000: set by AC when any indoor unit is in cooling mode |
 |   | X000_0000: set by AC when any indoor unit is in heating mode |
 | 8 | used for reservation data and other things (see below) |
+|   | 0X00_0000: if this is set, the AC unit will send a batch with all of its settings (other message types below) |
 | 9 | used for reservation data and other things (see below) |
 | 10 | 0000_000X: set temporarily for installer setting 1 (test run) |
 |    | 0000_X000: active robot clean |
