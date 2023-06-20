@@ -72,7 +72,7 @@ Format:
 |   | 0X00_0000: set by AC when any indoor unit is in cooling mode |
 |   | X000_0000: set by AC when any indoor unit is in heating mode |
 | 8 | used for reservation data and other things (see below) |
-|   | 0X00_0000: if this is set, the AC unit will send a batch with all of its settings (other message types below) |
+|   | 0X00_0000: if set, the AC unit will send a batch with all of its settings (other message types below) and clear it. LG controller sets this when powered on. |
 | 9 | used for reservation data and other things (see below) |
 | 10 | 0000_000X: set temporarily for installer setting 1 (test run) |
 |    | 0000_X000: active robot clean |
@@ -194,7 +194,7 @@ Maybe two different timers or (temperature) sensors? It's hard for me to figure 
 | 5 | unknown |
 | 6 | 0000_00X0: oil change warning |
 |   | 0000_0X00: centrigrade control, installer setting 17 (0: 1C, 1: 0.5C) |
-|   | 0000_X000: emergency header, installer setting 18 (0: don't use, 1: use) |
+|   | 0000_X000: emergency heater, installer setting 18 (0: don't use, 1: use) |
 |   | 0X00_0000: emergency heater, installer setting 18, fan speed (0: fan off, 1: fan on) |
 |   | X000_0000: function setting for group control, installer setting 19 (0: not in use, 1: in use) |
 | 7 | 0X00_0000: indoor unit Wifi Access Point (AP) mode |
