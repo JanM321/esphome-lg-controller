@@ -32,6 +32,7 @@ class LgController final : public climate::Climate, public Component {
     esphome::binary_sensor::BinarySensor defrost_;
     esphome::binary_sensor::BinarySensor preheat_;
     esphome::binary_sensor::BinarySensor outdoor_;
+    uint32_t last_outdoor_change_millis_ = 0;
 
     LgSwitch purifier_;
     LgSwitch internal_thermistor_;
@@ -317,6 +318,13 @@ private:
         pending_change_ = false;
         pending_send_ = true;
         last_sent_millis_ = millis();
+
+        // If we sent an updated temperature to the AC, update temperature in HA too instead of
+        // waiting for the next status message from the AC (it can take up to a minute).
+        if (thermistor == ThermistorSetting::Controller && this->current_temperature != temp) {
+            this->current_temperature = temp;
+            publish_state();
+        }
     }
 
     void process_message(const uint8_t* buffer, bool* had_error) {
@@ -353,11 +361,19 @@ private:
         preheat_.publish_state(buffer[3] & 0x8);
         error_code_.publish_state(buffer[11]);
 
-        // When turning on the outdoor unit, the AC sometimes reports ON => OFF => ON within one
-        // second. No big deal but it causes noisy state changes in HA. Only report OFF if we've
-        // seen it twice in a row. This is fine because the unit sends each message at least twice
-        // anyway.
-        outdoor_.publish_state((buffer[5] & 0x4) || (last_recv_status_[5] & 0x4));
+        // When turning on the outdoor unit, the AC sometimes reports ON => OFF => ON within a
+        // few seconds. No big deal but it causes noisy state changes in HA. Only report OFF if
+        // the last state change was at least 8 seconds ago.
+        bool outdoor_on = buffer[5] & 0x4;
+        bool outdoor_changed = outdoor_.state != outdoor_on;
+        if (outdoor_on) {
+            outdoor_.publish_state(true);
+        } else if (millis() - last_outdoor_change_millis_ > 8000) {
+            outdoor_.publish_state(false);
+        }
+        if (outdoor_changed) {
+            last_outdoor_change_millis_ = millis();
+        }
 
         float unit_temp = float(buffer[7] & 0x3F) / 2 + 10;
         if (this->current_temperature != unit_temp) {
