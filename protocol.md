@@ -31,7 +31,7 @@ The lower four bits are used for the message type. For example 0xC8 means it's a
 
 The last byte is a checksum, computed by adding up the other bytes and XOR'ing with 0x55.
 
-## Status message (0x8)
+## Status message (0xA8/0xC8/0x28)
 Status messages are used to control all of the basic settings such as operation mode, fan mode, room temperature, etc.
 
 The controller will send this when a setting changes or else every 20 seconds. For the AC unit this is every 60 seconds.
@@ -89,7 +89,7 @@ Timer-related settings use the reservation flag in byte 3 with details in bytes 
 ```
 The sleep timer option is similar, but sets byte 8 to 0x18/0x19 instead of 0x28/0x29.
 
-## Capabilities message (0x9)
+## Capabilities message (0xC9)
 The AC sends this to the controller when it's powered on to tell it which features are supported.
 
 Format:
@@ -151,7 +151,7 @@ Format:
 |    | X000_0000: simple dry contact installer setting 41 |
 | 12 | Checksum |
 
-## Advanced settings (0xA)
+## Advanced settings (0xAA/0xCA)
 Type 0xA messages store more advanced settings and are only sent when the AC is powered on or when changing settings.
 
 | Byte | Description |
@@ -170,7 +170,7 @@ Type 0xA messages store more advanced settings and are only sent when the AC is 
 |    | XXXX_0000: unknown |
 | 12 | Checksum |
 
-## More settings (0xB)
+## More settings (0xAB/0xCB)
 0xB stores more information and settings (whether Wifi AP mode is on, installer settings, etc). There's some information in the comments of https://www.instructables.com/Hacking-an-LG-Ducted-Split-for-Home-Automation/
 Unlike the information there, my unit and controller don't send this regularly but only when changing some installer settings or after power on (AC unit).
 
@@ -208,7 +208,7 @@ Maybe two different timers or (temperature) sensors? It's hard for me to figure 
 | 11| 0000_XXXX: emergency heater, installer setting 18, low ambient heating operation (0-15) |
 | 12 | Checksum |
 
-## Type 0xC
+## Type 0xC (0xAC/0xCC)
 The wall controller sends these regularly and apparently some AC units do this too, but I've never seen this from my unit. Maybe this is only used by single-split systems.
 Example from my notes, but I haven't checked if this is accurate:
 ```
@@ -218,6 +218,32 @@ bytes 3-5: energy usage 06:49, 12.9 kWh
 ```
 Byte 12 controls some functions like mosquito away.
 
-## Types 0xD and 0xE
-My unit sends these after power on. The wall controller uses them for some installer settings. Almost all bytes are zero.
+## Type 0xD settings (0xAD/0xCD)
+My unit sends this after power on with all zeroes. The wall controller uses it for some installer settings.
+```
+Set 25 (auxiliary heater) to duct-type:          ad 04 ...
+Set 36 (use primary heater control) to 1:        ad 40 ...
+Set 38 (fan interlocked with ventilation) to 1:  ad 02 ...
+Set 39 (indoor unit auto start) to 1:            ad 01
+Set 41 (simple dry contact setting) to 3:        ad 00 00 00 00 00 03 00 00 00 00 00 ..
+```
 
+## Type 0xE settings (0xAE/0xCE)
+Also used for installer settings. The format here seems a bit different:
+```
+CE.00... => available settings?
+
+CE.10... => used to set certain settings
+Set 46 (fan continuous) to 1:                        ae 10 00 00 02 00 00 00 00 00 00 00 ..
+Set 47 (outdoor unit function) to 1:                 ae 10 00 00 00 10 00 00 00 00 00 00 ..
+Set 48 (silent mode) to 2:                           ae 10 00 02 00 00 00 00 00 00 00 00 ..
+Set 49 (defrost mode) to 3:                          ae 10 00 30 00 00 00 00 00 00 00 00 ..
+Set 51 (temperature-based fan speed auto) to 1:      ae 10 00 00 04 00 00 00 00 00 00 00 ..
+Set 52 (CN_EXT setting) to 5:                        ae 10 00 00 50 00 00 00 00 00 00 00 .. 
+Set 56 (outdoor unit cycle priority) to 1 (standby): ae 10 00 00 00 00 10 00 00 00 00 00 ..
+Set it to 2 (cool) with step 3:                      ae 10 00 00 00 00 07 00 00 00 00 00 ..
+Set it to 2 (cool) with step 4:                      ae 10 00 00 00 00 09 00 00 00 00 00 ..
+Set 60 (outdoor unit cycle priority) to 1 (special): ae 10 00 00 00 00 20 00 00 00 00 00 ..
+Set 57 (outdoor temp for heating stages) to 1:       ae 10 00 00 00 00 40 00 00 00 00 00 ..
+Set it to 3 with 27.5C:                              ae 10 00 00 00 00 00 00 5b 00 00 00 .. => 0x1b = 27, other bit is for 0.5
+```
