@@ -30,11 +30,15 @@ See [hardware/](hardware/) for schematics. This part was based on the excellent 
 * https://flameeyes.blog/tag/lg/
 * https://github.com/Flameeyes/esphome-lg-pqrcuds0
 
-Similar to their setup, I used an Espressif ESP32-DevKitC-32E board (it has the ESP32-WROOM-32E module) with a [TI TLIN1027DRQ1](https://www.ti.com/product/TLIN1027-Q1/part-details/TLIN1027DRQ1) LIN bus transceiver. LIN bus transceivers are typically used in the automotive industry but work well for this too. As [documented](https://flameeyes.blog/2021/06/29/lg-aircon-reversing-part-2-buses-and-cars/) by Flameeyes, it's important to use a LIN bus transceiver without the "TXD-Dominant Timeout" feature because LG's very slow ~104 bps serial connection can trigger that timeout and this will corrupt the signal. 
+The hardware needs three main components:
+1) **Microcontroller**. Similar to their setup, I used an Espressif ESP32-DevKitC-32E board (it has the ESP32-WROOM-32E module).
+A devkit module is nice for this because it doesn't need any external components. My PCB has two female pin headers connecting it to the board. This also makes it easy to replace or upgrade if needed.
+2) **Transceiver**. The AC has a single (12V) signal wire but the microcontroller has separate (lower-voltage) RX/TX pins. I used a [TI TLIN1027DRQ1](https://www.ti.com/product/TLIN1027-Q1/part-details/TLIN1027DRQ1) LIN bus transceiver. LIN bus transceivers are typically used in the automotive industry but work well for this too. As [explained](https://flameeyes.blog/2021/06/29/lg-aircon-reversing-part-2-buses-and-cars/) by Flameeyes, it's important to use a LIN bus transceiver without the "TXD-Dominant Timeout" feature because LG's very slow ~104 bps serial connection can trigger that timeout and this will corrupt the signal.
+3) **Voltage regulator**. The AC supplies 12V but the microcontroller needs 3.3V. I replaced the voltage regulator part with a [Traco Power TSRN 1-2433](https://www.tracopower.com/int/model/tsrn-1-2433) step-down switching regulator because it doesn't require any external components such as capacitors or inductors.
 
-I replaced the voltage regulator part with a [Traco Power TSRN 1-2433](https://www.tracopower.com/int/model/tsrn-1-2433) step-down switching regulator because it doesn't require any external components such as capacitors or inductors. I also used SMT components if available because I had the PCBs assembled by PCBWay. The only other components are a screw terminal for connecting the PCB to the AC and some capacitors, resistors and diodes that are based on the TLIN1027DRQ1 data sheet.
+The only other components on my PCB are a screw terminal for connecting the PCB to the AC and some capacitors, resistors and diodes that are based on the TLIN1027DRQ1 data sheet. I used SMT components if available because I had the PCBs assembled by PCBWay. 
 
-Note that an alternative for the LIN bus transceiver is an opto-isolator design as documented here:
+Note: an alternative for the LIN bus transceiver is the opto-isolator design used here:
 * https://github.com/AussieMakerGeek/LG_Aircon_MQTT_interface
 * https://www.instructables.com/Hacking-an-LG-Ducted-Split-for-Home-Automation/
 
