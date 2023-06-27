@@ -21,6 +21,8 @@ This component should be compatible with LG AC units like the PC12SQ, AP12RT etc
 
 This controller is written to be the main/only wired controller connected to the AC. LG calls this the "master" controller. I haven't tested connecting a second controller in slave mode.
 
+Wired controllers using the new protocol are 'dumb' in that they only send and receive settings and current temperature. The HVAC unit decides when to start/stop active cooling/heating etc based on this. That said, it should be possible to use a fake temperature sensor to influence this behavior but I haven't tested this.
+
 The LG ThinQ app and (IR) remote control still work. The AC unit will synchronize settings with the wall controller.
 
 See [protocol.md](protocol.md) for notes on the protocol based on reverse engineering behavior of the PREMTB001 controller.
