@@ -73,6 +73,7 @@ Format:
 |   | X000_0000: set by AC when any indoor unit is in heating mode |
 | 8 | used for reservation data and other things (see below) |
 |   | 0X00_0000: if set, the AC unit will send a batch with all of its settings (other message types below) and clear it. LG controller sets this when powered on. |
+|   | X000_0000: set temporarily for "release 3 minute delay" installer setting 10 |
 | 9 | used for reservation data and other things (see below) |
 | 10 | 0000_000X: set temporarily for installer setting 1 (test run) |
 |    | 0000_X000: active robot clean |
@@ -247,3 +248,6 @@ Set 60 (outdoor unit cycle priority) to 1 (special): ae 10 00 00 00 00 20 00 00 
 Set 57 (outdoor temp for heating stages) to 1:       ae 10 00 00 00 00 40 00 00 00 00 00 ..
 Set it to 3 with 27.5C:                              ae 10 00 00 00 00 00 00 5b 00 00 00 .. => 0x1b = 27, other bit is for 0.5
 ```
+
+## Other
+Types 0x0 and 0x1 seem related to external ventilation products.
