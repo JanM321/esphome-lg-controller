@@ -17,13 +17,24 @@ There seem to be two different protocols that LG AC units and wall controllers u
 
 The controller hardware is identical because both use a very slow serial connection (104 bps) over a three-wire cable (Red = 12V, Yellow = Signal, Black = GND). In fact, some LG controllers support both protocols: my LG PREMTB001 controller first tries the 13-byte protocol and if it doesn't receive a response it will switch to the 6-byte protocol.
 
-This component should be compatible with LG AC units like the PC12SQ, AP12RT etc. I've only tested this with units connected to a multi-split outdoor unit, but single-split will very likely also work.
+This component should be compatible with LG AC units like the PC12SQ, AP12RT etc. I've only tested this with mini split units connected to a multi-split outdoor unit, but single-split will very likely also work.
 
 This controller is written to be the main/only wired controller connected to the AC. LG calls this the "master" controller. I haven't tested connecting a second controller in slave mode.
 
 The LG ThinQ app and (IR) remote control still work. The AC unit will synchronize settings with the wall controller.
 
 See [protocol.md](protocol.md) for notes on the protocol based on reverse engineering behavior of the PREMTB001 controller.
+
+# Features
+Features currently exposed to Home Assistant:
+* Operation mode (off, auto, cool, heat, dry/dehumidify, fan only).
+* Target temperature (0.5°C steps).
+* Use of a Home Assistant temperature sensor for room temperature (rounded to nearest 0.5°C). 
+* Fan mode (low, medium, high, auto).
+* Swing mode (off, vertical, horizontal, both).
+* Switch for external vs internal thermistor.
+* Switch for air purifier (plasma) on/off.
+* Sensors for reporting outdoor unit on/off, defrost, preheat, error code.
 
 # Hardware
 See [hardware/](hardware/) for schematics and list of materials. This part was based on the excellent work and research by [@Flameeyes](https://github.com/Flameeyes):
