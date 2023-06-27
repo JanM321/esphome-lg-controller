@@ -26,7 +26,7 @@ The LG ThinQ app and (IR) remote control still work. The AC unit will synchroniz
 See [protocol.md](protocol.md) for notes on the protocol based on reverse engineering behavior of the PREMTB001 controller.
 
 # Hardware
-See [hardware/](hardware/) for schematics. This part was based on the excellent work and research by [@Flameeyes](https://github.com/Flameeyes):
+See [hardware/](hardware/) for schematics and list of materials. This part was based on the excellent work and research by [@Flameeyes](https://github.com/Flameeyes):
 * https://flameeyes.blog/tag/lg/
 * https://github.com/Flameeyes/esphome-lg-pqrcuds0
 
