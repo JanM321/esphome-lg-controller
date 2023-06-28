@@ -109,7 +109,7 @@ Format:
 |   | 00X0_0000: operation mode Heating |
 |   | 0X00_0000: operation mode Fan |
 |   | X000_0000: operation mode Dehumidify |
-| 3 | available fan options (slow, low, medium, high, auto, power) |
+| 3 | available fan options. auto (0x1), power (0x2, available in heating mode: 0x80?), medium (0x8), low (0x10?), slow (0x20?), high (always available?) |
 | 4 | 0000_000X: vertical vane control |
 |   | 0000_00X0: ESP value installer setting |
 |   | 0000_0X00: static pressure installer setting |
