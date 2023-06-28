@@ -1,6 +1,6 @@
 # ESPHome LG AC Wired Controller
 
-ESPHome component implementing a custom wall controller for LG Air Conditioners. This allows basic control of an indoor unit from Home Assistant. It also optionally replaces the use of the unit's internal thermistor with a Home Assistant temperature sensor.
+ESPHome component implementing a custom wired controller for LG Air Conditioners. This allows basic control of an indoor unit from Home Assistant. It also optionally replaces the use of the unit's internal thermistor with a Home Assistant temperature sensor.
 
 This has some advantages compared to the [LG ThinQ integration](https://github.com/ollo69/ha-smartthinq-sensors) for Home Assistant:
 * Ability to use an external sensor for room temperature.
@@ -23,12 +23,12 @@ This controller is written to be the main/only wired controller connected to the
 
 Wired controllers using the new protocol are 'dumb' in that they only send and receive settings and current temperature. The HVAC unit decides when to start/stop active cooling/heating etc based on this. That said, it should be possible to use a fake temperature sensor to influence this behavior but I haven't tested this.
 
-The LG ThinQ app and (IR) remote control still work. The AC unit will synchronize settings with the wall controller.
+The LG ThinQ app and (IR) remote control still work. The AC unit will synchronize settings with the wired controller.
 
 See [protocol.md](protocol.md) for notes on the protocol based on reverse engineering behavior of the PREMTB001 controller.
 
 # Features
-Features currently exposed to Home Assistant:
+Features currently available in Home Assistant:
 * Operation mode (off, auto, cool, heat, dry/dehumidify, fan only).
 * Target temperature (0.5°C steps).
 * Use of a Home Assistant temperature sensor for room temperature (rounded to nearest 0.5°C). 
@@ -37,6 +37,8 @@ Features currently exposed to Home Assistant:
 * Switch for external vs internal thermistor.
 * Switch for air purifier (plasma) on/off.
 * Sensors for reporting outdoor unit on/off, defrost, preheat, error code.
+
+The LG ThinQ app and wireless remote can still be used to change these settings and other settings. They'll be synchronized with this controller.
 
 # Hardware
 See [hardware/](hardware/) for schematics and list of materials. This part was based on the excellent work and research by [@Flameeyes](https://github.com/Flameeyes):
