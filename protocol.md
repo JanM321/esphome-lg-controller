@@ -140,8 +140,14 @@ Format:
 |   | 00X0_0000: group control installer setting |
 |   | 0X00_0000: unit information setting |
 |   | X000_0000: clear filter timer in settings |
-| 9 | some installer settings (26, 27, 29) and energy usage setting (0x10) |
-| 10 | some installer settings (32, 35, 36) and Wifi AP setting (0x4) |
+| 9 | 0000_00X0: indoor unit address check, installer setting 26 |
+|   | 0000_0X00: over cooling, installer setting 27 |
+|   | 000X_0000: energy usage setting |
+|   | X000_0000: refrigerant leak detector installation, installer setting 29 |
+| 10 | 0000_00X0: static pressure step, installer setting 32 |
+|    | 0000_0X00: indoor unit Wifi AP setting |
+|    | 0X00_0000: fan cooling mode thermal off, installer setting 35 |
+|    | X000_0000: use primary heater control, installer setting 36 |
 | 11 | 0000_000X: indoor unit auto start installer setting |
 |    | 0000_00X0: AC fan interlocked with ventilation installer setting |
 |    | 0000_0X00: himalaya cool sub function |
