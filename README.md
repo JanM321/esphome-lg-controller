@@ -19,7 +19,7 @@ The controller hardware is identical because both use a very slow serial connect
 
 Wired controllers must be connected to the CN-REMO socket on the indoor unit's PCB (green 3 pin JST-XH connector). Fortunately my wall units came with a short extension cable already plugged into that port so I only had to open up the bottom part of the unit to connect my controller.
 
-This component should be compatible with LG HVAC units like the PC12SQ (Standard Plus), AP09RT etc. I've only tested this with mini split units connected to a multi-split outdoor unit (heat pump model, MU2R17 Multi F), but single-split will very likely also work.
+This component should be compatible with modern LG HVAC mini split units like the PC12SQ (Standard Plus), AP09RT etc. I'm using this controller with units connected to a multi-split outdoor unit (heat pump model, MU2R17 Multi F).
 
 This controller is written to be the main/only wired controller connected to the AC. LG calls this the "master" controller. I haven't tested connecting a second controller in slave mode.
 
