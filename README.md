@@ -17,7 +17,9 @@ There seem to be two different protocols that LG AC units and wall controllers u
 
 The controller hardware is identical because both use a very slow serial connection (104 bps) over a three-wire cable (Red = 12V, Yellow = Signal, Black = GND). In fact, some LG controllers support both protocols: my LG PREMTB001 controller first tries the 13-byte protocol and if it doesn't receive a response it will switch to the 6-byte protocol.
 
-This component should be compatible with LG AC units like the PC12SQ, AP12RT etc. I've only tested this with mini split units connected to a multi-split outdoor unit, but single-split will very likely also work.
+Wired controllers must be connected to the CN-REMO port on the indoor unit's PCB (green 3 pin JST-XH connector). Fortunately my wall units came with a short extension cable already plugged into that port so I only had to open up the bottom part of the unit to connect my controller.
+
+This component should be compatible with LG HVAC units like the PC12SQ (Standard Plus), AP09RT etc. I've only tested this with mini split units connected to a multi-split outdoor unit (heat pump model), but single-split will very likely also work.
 
 This controller is written to be the main/only wired controller connected to the AC. LG calls this the "master" controller. I haven't tested connecting a second controller in slave mode.
 
