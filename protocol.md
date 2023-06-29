@@ -3,15 +3,15 @@
 Some notes and documentation on the protocol used by wired wall controllers. This is largely based on reverse-engineering the LG PREMTB001 controller.
 Most of these things haven't been tested with an actual AC unit.
 
-NOTE: as explained in the README, this controller actually supports two different protocols. This only documents the more modern protocol that's used by my own AC.
+NOTE: as explained in the [README](./README.md), this controller actually supports two different protocols. This only documents the more modern protocol that's used by my own AC.
 
 Some information is based on:
 * This post and comments: https://www.instructables.com/Hacking-an-LG-Ducted-Split-for-Home-Automation/
 * Corresponding source code: https://github.com/AussieMakerGeek/LG_Aircon_MQTT_interface
 
 ## Overview
-LG controllers use a (very slow) 104 bps 8N1 serial connection over a three-wire cable (Red = 12V, Yellow = Signal, Black = GND).
-The AC and controller will often send the same message twice (or even four times) with a short delay between them, but this is not required.
+LG controllers use a (very slow) 104 bps 8N1 serial connection over a three-wire cable (Red = 12V, Yellow = Signal, Black = GND) connected to the CN-REMO port on the indoor unit's PCB.
+The HVAC unit and controller will often send the same message twice (or even four times) with a short delay between them, but this is not required.
 
 ## Collisions
 Collisions on the bus are possible because devices can send at arbitrary times, for example immediately after a setting is changed. My custom controller tries to
