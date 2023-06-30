@@ -1,6 +1,6 @@
 # ESPHome LG AC Wired Controller
 
-ESPHome component implementing a custom wired controller for LG Air Conditioners. This allows basic control of an indoor unit from Home Assistant. It also optionally replaces the use of the unit's internal thermistor with a Home Assistant temperature sensor.
+[ESPHome](https://esphome.io/) component implementing a custom wired controller for LG Air Conditioners. This allows basic control of an indoor unit from [Home Assistant](https://www.home-assistant.io/). It also optionally replaces the use of the unit's internal thermistor with a Home Assistant temperature sensor.
 
 This has some advantages compared to the [LG ThinQ integration](https://github.com/ollo69/ha-smartthinq-sensors) for Home Assistant:
 * Ability to use an external sensor for room temperature.
@@ -51,7 +51,7 @@ A devkit module is nice for this because it doesn't need any external components
 2) **Transceiver**. The AC has a single (12V) signal wire but the microcontroller has separate (lower-voltage) RX/TX pins. I used a [TI TLIN1027DRQ1](https://www.ti.com/product/TLIN1027-Q1/part-details/TLIN1027DRQ1) LIN bus transceiver. LIN bus transceivers are typically used in the automotive industry but work well for this too. As [explained](https://flameeyes.blog/2021/06/29/lg-aircon-reversing-part-2-buses-and-cars/) by Flameeyes, it's important to use a LIN bus transceiver without the "TXD-Dominant Timeout" feature because LG's very slow ~104 bps serial connection can trigger that timeout and this will corrupt the signal.
 3) **Voltage regulator**. The AC supplies 12V but the microcontroller needs 3.3V. I replaced the voltage regulator part with a [Traco Power TSRN 1-2433](https://www.tracopower.com/int/model/tsrn-1-2433) step-down switching regulator because it doesn't require any external components such as capacitors or inductors.
 
-The only other components on my PCB are a screw terminal for connecting the PCB to the AC and some capacitors, resistors and diodes that are based on the TLIN1027DRQ1 data sheet. I used SMT components if available because I had the PCBs assembled by PCBWay. 
+The only other components on my PCB are a screw terminal for connecting the PCB to the AC and some capacitors, resistors and diodes that are based on the TLIN1027DRQ1 data sheet. I used SMT components if available because I had the PCBs assembled by [PCBWay](https://www.pcbway.com/).
 
 Note: an alternative for the LIN bus transceiver is the opto-isolator design used here:
 * https://github.com/AussieMakerGeek/LG_Aircon_MQTT_interface
