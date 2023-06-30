@@ -12,8 +12,8 @@ This has some advantages compared to the [LG ThinQ integration](https://github.c
 
 # Protocol and Compatibility
 There seem to be two different protocols that LG AC units and wall controllers use to communicate: 
-1. A 6-byte protocol where the controller sends a 6-byte message every N seconds and the AC unit responds with a 6-byte message. This is the more basic protocol and likely older because it doesn't support advanced features and settings. An ESPHome implementation of this is available here: https://github.com/Flameeyes/esphome-lg-pqrcuds0
-2. A 13-byte [protocol](protocol.md) where the controller sends a 13-byte status message every 20 seconds (or when there's a change in settings) and the AC unit sends a very similar status message every 60 seconds. There are also other message types for more advanced settings. **This is the one implemented here.**
+1. **Older 6-byte protocol**: the controller sends a 6-byte message every four seconds or so and the AC unit responds with a 6-byte message. This is the more basic protocol and likely older because it doesn't support advanced features and settings. An ESPHome implementation of this is available here: https://github.com/Flameeyes/esphome-lg-pqrcuds0
+2. **Newer 13-byte [protocol](protocol.md)**: the controller sends a 13-byte status message every 20 seconds (or when there's a change in settings) and the AC unit sends a very similar status message every 60 seconds. There are also other message types for more advanced settings. **This is the one implemented here.**
 
 The controller hardware is identical because both use a very slow serial connection (104 bps) over a three-wire cable (Red = 12V, Yellow = Signal, Black = GND). In fact, some LG controllers support both protocols: my LG PREMTB001 controller first tries the 13-byte protocol and if it doesn't receive a response it will switch to the 6-byte protocol.
 
@@ -24,8 +24,6 @@ This component should be compatible with modern LG HVAC mini split units like th
 This controller is written to be the main/only wired controller connected to the AC. LG calls this the "master" controller. I haven't tested connecting a second controller in slave mode.
 
 Wired controllers using the new protocol are 'dumb' in that they only send and receive settings and current temperature. The HVAC unit decides when to start/stop active cooling/heating etc based on this. That said, it should be possible to use a fake temperature sensor to influence this behavior but I haven't tested this.
-
-The LG ThinQ app and (IR) remote control still work. The AC unit will synchronize settings with the wired controller.
 
 See [protocol.md](protocol.md) for notes on the protocol based on reverse engineering behavior of the PREMTB001 controller.
 
