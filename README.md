@@ -41,6 +41,8 @@ Features currently available in Home Assistant:
 The LG ThinQ app and wireless remote can still be used to change these settings and other settings. They'll be synchronized with this controller.
 
 # Hardware
+<img src="hardware/schematic.png" width="60%" height="60%">
+
 See [hardware/](hardware/) for schematics and list of materials. This part was based on the excellent work and research by [@Flameeyes](https://github.com/Flameeyes):
 * https://flameeyes.blog/tag/lg/
 * https://github.com/Flameeyes/esphome-lg-pqrcuds0
