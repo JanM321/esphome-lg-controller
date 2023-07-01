@@ -1,11 +1,11 @@
 # ESPHome LG AC Wired Controller
 Wired controller for LG Air Conditioners using an ESP32 microcontroller and [ESPHome](https://esphome.io/). It can be used to control an indoor unit from [Home Assistant](https://www.home-assistant.io/).
 
-This has some advantages compared to the [LG ThinQ integration](https://github.com/ollo69/ha-smartthinq-sensors) for Home Assistant:
-* Ability to use an external sensor for room temperature.
+This has some advantages compared to the [LG ThinQ integration](https://github.com/ollo69/ha-smartthinq-sensors):
+* Ability to use a Home Assistant temperature sensor for room temperature.
 * Does not depend on LG's ThinQ cloud service.
 * No annoying sounds from the AC unit when changing settings through the controller.
-* More settings and information available, although some settings like display light on/off are available in ThinQ but aren't passed to the controller as far as I can tell.
+* More settings and information available (although some settings like display light on/off are available in ThinQ but aren't passed to the wired controller).
 
 ![Controller PCB in enclosure](images/controller2.jpg) ![Screenshot of custom controller in Home Assistant](images/controller3.png)
 
@@ -42,7 +42,7 @@ The LG ThinQ app and wireless remote can still be used to change these settings 
 # Hardware
 <img src="hardware/schematic.png" width="100%" height="100%">
 
-See [hardware/](hardware/) for schematics and list of materials. This part was based on the excellent work and research by [@Flameeyes](https://github.com/Flameeyes):
+See [hardware/](hardware/) for schematic and list of materials. This part was based on the excellent work and research by [@Flameeyes](https://github.com/Flameeyes):
 * https://flameeyes.blog/tag/lg/
 * https://github.com/Flameeyes/esphome-lg-pqrcuds0
 
@@ -53,7 +53,7 @@ A devkit module is nice for this because it doesn't need any external components
 3) **Voltage regulator**. This is needed because the AC supplies 12V but the microcontroller requires 3.3V. I replaced the voltage regulator part with a [Traco Power TSRN 1-2433](https://www.tracopower.com/int/model/tsrn-1-2433) step-down switching regulator because it doesn't require any external components such as capacitors or inductors.
 4) **Connector**. To connect the PCB to the AC. I used a screw terminal for this.
 
-The only other components on my PCB are some capacitors, resistors and diodes that are based on the TLIN1027DRQ1 data sheet. I'm not sure if these are really necessary but I included them to be safe and it works well. I used SMT components if available because I had the PCBs assembled by [PCBWay](https://www.pcbway.com/).
+My PCB also has some capacitors, resistors and diodes that are based on the TLIN1027DRQ1 data sheet. I'm not sure if these are really necessary but I included them to be safe and it works well. I used SMT components if available because I had the PCBs assembled by [PCBWay](https://www.pcbway.com/).
 
 Note: an alternative for the LIN transceiver is the opto-isolator design used here:
 * https://github.com/AussieMakerGeek/LG_Aircon_MQTT_interface
