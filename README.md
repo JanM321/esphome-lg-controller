@@ -24,7 +24,7 @@ This controller is written to be the main/only wired controller connected to the
 
 Wired controllers using the new protocol only send and receive settings and current temperature. The HVAC unit itself decides when to start/stop active cooling/heating etc based on this. That said, it should be possible to use a fake temperature sensor to influence this behavior but I haven't tested this.
 
-See [protocol.md](protocol.md) for notes on the protocol based on reverse engineering behavior of the PREMTB001 controller.
+See [protocol.md](protocol.md) for information about the protocol based on reverse engineering the PREMTB001 controller.
 
 # Features
 Features currently available in Home Assistant:
