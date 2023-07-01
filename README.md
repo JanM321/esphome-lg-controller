@@ -1,6 +1,5 @@
 # ESPHome LG AC Wired Controller
-
-[ESPHome](https://esphome.io/) component implementing a custom wired controller for LG Air Conditioners. This allows basic control of an indoor unit from [Home Assistant](https://www.home-assistant.io/). It also optionally replaces the use of the unit's internal thermistor with a Home Assistant temperature sensor.
+Wired controller for LG Air Conditioners using an ESP32 microcontroller and [ESPHome](https://esphome.io/). It can be used to control an indoor unit from [Home Assistant](https://www.home-assistant.io/).
 
 This has some advantages compared to the [LG ThinQ integration](https://github.com/ollo69/ha-smartthinq-sensors) for Home Assistant:
 * Ability to use an external sensor for room temperature.
@@ -23,7 +22,7 @@ This component should be compatible with modern LG HVAC mini split units like th
 
 This controller is written to be the main/only wired controller connected to the AC. LG calls this the "master" controller. I haven't tested connecting a second controller in slave mode.
 
-Wired controllers using the new protocol are 'dumb' in that they only send and receive settings and current temperature. The HVAC unit decides when to start/stop active cooling/heating etc based on this. That said, it should be possible to use a fake temperature sensor to influence this behavior but I haven't tested this.
+Wired controllers using the new protocol only send and receive settings and current temperature. The HVAC unit itself decides when to start/stop active cooling/heating etc based on this. That said, it should be possible to use a fake temperature sensor to influence this behavior but I haven't tested this.
 
 See [protocol.md](protocol.md) for notes on the protocol based on reverse engineering behavior of the PREMTB001 controller.
 
@@ -50,9 +49,9 @@ See [hardware/](hardware/) for schematics and list of materials. This part was b
 The hardware needs four main components:
 1) **Microcontroller**. Similar to their setup, I used an Espressif ESP32-DevKitC-32E board (it has the ESP32-WROOM-32E module).
 A devkit module is nice for this because it doesn't need any external components. My PCB has two female pin headers connecting it to the board. This also makes it easy to replace or upgrade if needed.
-2) **Transceiver**, because the AC has a single (12V) signal wire but the microcontroller has separate (lower-voltage) RX/TX pins. I used a [TI TLIN1027DRQ1](https://www.ti.com/product/TLIN1027-Q1/part-details/TLIN1027DRQ1) LIN transceiver. LIN transceivers are typically used in the automotive industry but work well for this too. As [explained](https://flameeyes.blog/2021/06/29/lg-aircon-reversing-part-2-buses-and-cars/) by Flameeyes, it's important to use a LIN transceiver without the "TXD-Dominant Timeout" feature because LG's very slow ~104 bps serial connection can trigger that timeout and this will corrupt the signal.
-3) **Voltage regulator**, because the AC supplies 12V but the microcontroller needs 3.3V. I replaced the voltage regulator part with a [Traco Power TSRN 1-2433](https://www.tracopower.com/int/model/tsrn-1-2433) step-down switching regulator because it doesn't require any external components such as capacitors or inductors.
-4) **Connector**, to connect the PCB to the AC. I used a screw terminal for this.
+2) **Transceiver**. This is needed because the AC has a single (12V) signal wire but the microcontroller has separate (lower-voltage) RX/TX pins. I used a [TI TLIN1027DRQ1](https://www.ti.com/product/TLIN1027-Q1/part-details/TLIN1027DRQ1) LIN transceiver. LIN transceivers are typically used in the automotive industry but work well for this too. As [explained](https://flameeyes.blog/2021/06/29/lg-aircon-reversing-part-2-buses-and-cars/) by Flameeyes, it's important to use a LIN transceiver without the "TXD-Dominant Timeout" feature because LG's very slow ~104 bps serial connection can trigger that timeout and this will corrupt the signal.
+3) **Voltage regulator**. This is needed because the AC supplies 12V but the microcontroller requires 3.3V. I replaced the voltage regulator part with a [Traco Power TSRN 1-2433](https://www.tracopower.com/int/model/tsrn-1-2433) step-down switching regulator because it doesn't require any external components such as capacitors or inductors.
+4) **Connector**. To connect the PCB to the AC. I used a screw terminal for this.
 
 The only other components on my PCB are some capacitors, resistors and diodes that are based on the TLIN1027DRQ1 data sheet. I'm not sure if these are really necessary but I included them to be safe and it works well. I used SMT components if available because I had the PCBs assembled by [PCBWay](https://www.pcbway.com/).
 
@@ -60,7 +59,7 @@ Note: an alternative for the LIN transceiver is the opto-isolator design used he
 * https://github.com/AussieMakerGeek/LG_Aircon_MQTT_interface
 * https://www.instructables.com/Hacking-an-LG-Ducted-Split-for-Home-Automation/
 
-# Software
+# Firmware
 There are multiple ways to build the firmware, flash it on the device, and add the controller in Home Assistant. I used the following steps:
 1. Clone this repository and navigate to the `esphome` directory.
 2. Install ESPHome command line tools on Linux: https://esphome.io/guides/installing_esphome.html
