@@ -9,7 +9,7 @@
 | D1, D3 | TWGMC 1N4148WS | C727111 |
 | R1 | YAGEO RC0603FR-074K7L (4.7kΩ) | C99782 |
 | R2 | YAGEO RC0603FR-071KL (1kΩ) | C22548 |
-| U1 | TI TLIN1027DRQ1 (LIN bus transceiver) | C2870086 |
+| U1 | TI TLIN1027DRQ1 (LIN transceiver) | C2870086 |
 | U2 | DIBO DB301V-5.0-3P (3p screw terminal) | C395881 |
 | U3, U4 | HCTL HDR-TH_19P-P2.54-V-F (2.54mm 19p female pin header) | C2897382 | 
 | U6 | Traco Power TSRN 1-2433 (3.3V DC/DC converter) | - |
