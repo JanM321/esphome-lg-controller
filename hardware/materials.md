@@ -12,7 +12,9 @@
 | U1 | TI TLIN1027DRQ1 (LIN transceiver) | C2870086 |
 | U2 | DIBO DB301V-5.0-3P (3p screw terminal) | C395881 |
 | U3, U4 | HCTL HDR-TH_19P-P2.54-V-F (2.54mm 19p female pin header) | C2897382 | 
-| U6 | Traco Power TSRN 1-2433 (3.3V DC/DC converter) | - |
+| U6 | Traco Power TSRN 1-2433 (3.3V DC/DC converter) - see note below | - |
+
+Note: I probably should've used the Traco Power [TSR 1-2433](https://www.tracopower.com/int/model/tsr-1-2433) instead of the [TSRN 1-2433](https://www.tracopower.com/int/model/tsrn-1-2433), because it's cheaper and a little bit more efficient (91% vs 88%).
 
 ## Other
 * Espressif ESP32-DEVKITC-32E (with ESP32-WROOM-32E module)
