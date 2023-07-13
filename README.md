@@ -16,7 +16,7 @@ There seem to be two different protocols that LG AC units and wall controllers u
 
 The controller hardware is identical because both use a very slow serial connection (104 bps) over a three-wire cable (Red = 12V, Yellow = Signal, Black = GND). In fact, some LG controllers support both protocols: my LG PREMTB001 controller first tries the 13-byte protocol and if it doesn't receive a response it will switch to the 6-byte protocol.
 
-This controller has been used with the following units:
+This ESPHome controller has been used with the following units:
 * LG PC12SQ (Standard Plus), AP09RT units connected to a multi-split outdoor unit (heat pump, MU2R17 Multi F).
 * LG AS-W123MMM9 single wall mounted unit, heat pump, 10 years old, replaces PREMTB10U controller ([source](https://github.com/JanM321/esphome-lg-controller/issues/1#issuecomment-1631718974)).
 
