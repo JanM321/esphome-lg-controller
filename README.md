@@ -4,6 +4,7 @@ Wired controller for LG Air Conditioners using an ESP32 microcontroller and [ESP
 This has some advantages compared to the [LG ThinQ integration](https://github.com/ollo69/ha-smartthinq-sensors):
 * Can override the unit's room temperature thermistor with a Home Assistant temperature sensor.
 * Does not depend on LG's ThinQ cloud service.
+* Supports units without a Wifi module.
 * No annoying sounds from the AC unit when changing settings through the controller.
 * More settings and information available (although some settings like display light on/off are available in ThinQ but aren't passed to the wired controller).
 
