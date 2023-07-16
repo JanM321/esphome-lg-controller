@@ -131,8 +131,8 @@ Format:
 |   | 00X0_0000: minimum cooling target temperature is 16 instead of 18 |
 |   | XX00_0000: unknown |
 | 7 | 0000_0X00: auxiliary heater, installer setting |
+|   | 000X_X000: if set, can set zone = 1 to N (this value) in settings. Unclear what this is for |
 |   | X000_0000: over heating, installer setting 15 |
-|   | other bits unknown but seem related to zones |
 | 8 | 0000_000X: unknown installer setting 16 |
 |   | 0000_00X0: centrigrade installer setting (0.5C or 1C) |
 |   | 0000_XX00: unknown |
@@ -194,7 +194,8 @@ Maybe two different timers or (temperature) sensors? It's hard for me to figure 
 | --- | --- |
 | 0 | Message type, 0xAB or 0xCB |
 | 1 | 0000_00XX: DRED, demand response mode (0: off, 1: DRM 1, 2: DRM 2, 3: DRM 3) |
-| 2 | 000X_X000: over heat, installer setting 15 (0: default, 1: 4C/6C, 2: 2C/4C, 3: -1C/1C). Manual also has 4: -0.5C/0.5C but my controller doesn't. |
+| 2 | 0000_00XX: setting zone = 1-3 in settings menu will set these bits to that number. Unclear what this setting is for. |
+|   | 000X_X000: over heat, installer setting 15 (0: default, 1: 4C/6C, 2: 2C/4C, 3: -1C/1C). Manual also has 4: -0.5C/0.5C but my controller doesn't. |
 |   | XX00_0000: over cooling, installer setting 27 (0: 0.5C/-0.5C, 1: 6C/4C, 2: 4C/2C, 3: 1C/-1C) |
 | 3 | unknown |
 | 4 | unknown |
