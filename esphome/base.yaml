@@ -25,6 +25,8 @@ sensor:
       return ((LgController*)id(${deviceid}))->get_sensors();
     sensors:
       - name: Error Code
+  - platform: uptime
+    name: Uptime
 
 binary_sensor:
   - platform: custom
