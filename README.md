@@ -8,7 +8,7 @@ This has some advantages compared to the [LG ThinQ integration](https://github.c
 * No annoying sounds from the AC unit when changing settings through the controller.
 * More settings and information available (although some settings like display light on/off are available in ThinQ but aren't passed to the wired controller).
 
-![Controller PCB in enclosure](images/controller2.jpg) ![Screenshot of custom controller in Home Assistant](images/controller3.png)
+<img src="images/controller2.jpg" width="450px"> ![Screenshot of custom controller in Home Assistant](images/controller3.png)
 
 # Protocol and Compatibility
 There seem to be two different protocols that LG AC units and wall controllers use to communicate: 
