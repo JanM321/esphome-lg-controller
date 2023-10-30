@@ -193,8 +193,8 @@ Maybe two different timers or (temperature) sensors? It's hard for me to figure 
 | 0 | Message type, 0xAB or 0xCB |
 | 1 | 0000_00XX: DRED, demand response mode (0: off, 1: DRM 1, 2: DRM 2, 3: DRM 3) |
 | 2 | 0000_00XX: setting zone = 1-3 in settings menu will set these bits to that number. Unclear what this setting is for. |
-|   | 000X_X000: over heat, installer setting 15 (0: default, 1: 4C/6C, 2: 2C/4C, 3: -1C/1C). Manual also has 4: -0.5C/0.5C but my controller doesn't. |
-|   | XX00_0000: over cooling, installer setting 27 (0: 0.5C/-0.5C, 1: 6C/4C, 2: 4C/2C, 3: 1C/-1C) |
+|   | 00XX_X000: over heating, installer setting 15 (0: default for unit, 1: +4C/+6C, 2: +2C/+4C, 3: -1C/+1C, 4: -0.5C/+0.5C). Note: the LG controller only shows option 4 in Fahrenheit mode (where it's -1F/+1F) but a custom controller can send it in Celsius mode and it works well with my unit. |
+|   | XX00_0000: over cooling, installer setting 27 (0: +0.5C/-0.5C, 1: +6C/+4C, 2: +4C/+2C, 3: +1C/-1C) |
 | 3 | unknown |
 | 4 | unknown |
 | 5 | unknown |
