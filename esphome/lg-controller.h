@@ -48,6 +48,8 @@ class LgController final : public climate::Climate, public Component {
 
     bool pending_change_ = false;
 
+    bool is_initializing_ = true;
+
 public:
     LgController(esphome::uart::UARTComponent* serial,
                  esphome::sensor::Sensor* temperature_sensor)
@@ -303,8 +305,14 @@ private:
         send_buf_[6] = (thermistor << 4) | ((uint8_t(target) - 15) & 0xf);
         send_buf_[7] = (last_recv_status_[7] & 0xC0) | uint8_t((temp - 10) * 2);
 
-        // Bytes 8-11.
-        send_buf_[8] = last_recv_status_[8];
+        // Byte 8. Request settings when controller turns on.
+        if (is_initializing_) {
+            send_buf_[8] = 0x40;
+        } else {
+            send_buf_[8] = last_recv_status_[8];
+        }
+
+        // Bytes 9-11.
         send_buf_[9] = last_recv_status_[9];
         send_buf_[10] = last_recv_status_[10];
         send_buf_[11] = last_recv_status_[11];
@@ -330,6 +338,13 @@ private:
         ESP_LOGD(TAG, "received %s", format_hex_pretty(buffer, MsgLen).c_str());
 
         if (calc_checksum(buffer) != buffer[12]) {
+            // When initializing, the unit sends an all-zeroes message as padding between
+            // messages. Ignore those false checksum failures.
+            auto is_zero = [](uint8_t b) { return b == 0; };
+            if (std::all_of(buffer, buffer + MsgLen, is_zero)) {
+                ESP_LOGD(TAG, "Ignoring padding message sent by unit");
+                return;
+            }
             ESP_LOGE(TAG, "invalid checksum %s", format_hex_pretty(buffer, MsgLen).c_str());
             *had_error = true;
             return;
@@ -397,6 +412,7 @@ private:
         }
 
         memcpy(last_recv_status_, buffer, MsgLen);
+        is_initializing_ = false;
 
         uint8_t b = buffer[1];
         if ((b & 0x2) == 0) {
@@ -485,7 +501,9 @@ private:
         }
 
         // If we did not receive the message we sent last time, try to send it again next time.
-        if (pending_send_) {
+        // Ignore this when we're initializing because the unit then immediately responds by
+        // sending a lot of messages and this introduces a delay.
+        if (pending_send_ && !is_initializing_) {
             ESP_LOGE(TAG, "did not receive message we just sent");
             pending_send_ = false;
             pending_change_ = true;
