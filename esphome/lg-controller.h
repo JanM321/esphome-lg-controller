@@ -319,8 +319,7 @@ private:
         pending_send_ = true;
         last_sent_millis_ = millis();
 
-        // If we sent an updated temperature to the AC, update temperature in HA too instead of
-        // waiting for the next status message from the AC (it can take up to a minute).
+        // If we sent an updated temperature to the AC, update temperature in HA too.
         if (thermistor == ThermistorSetting::Controller && this->current_temperature != temp) {
             this->current_temperature = temp;
             publish_state();
@@ -375,10 +374,15 @@ private:
             last_outdoor_change_millis_ = millis();
         }
 
-        float unit_temp = float(buffer[7] & 0x3F) / 2 + 10;
-        if (this->current_temperature != unit_temp) {
-            this->current_temperature = unit_temp;
-            publish_state();
+        // Report the unit's room temperature only if we're using the internal thermistor. With an
+        // external temperature sensor, some units report the temperature we sent and others
+        // always send the internal temperature.
+        if (internal_thermistor_.state) {
+            float unit_temp = float(buffer[7] & 0x3F) / 2 + 10;
+            if (this->current_temperature != unit_temp) {
+                this->current_temperature = unit_temp;
+                publish_state();
+            }
         }
 
         // Don't update our settings if we have a pending change/send, because else we overwrite
