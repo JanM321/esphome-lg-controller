@@ -20,6 +20,8 @@ The controller hardware is identical because both use a very slow serial connect
 This ESPHome controller has been used with the following units:
 * LG PC12SQ (Standard Plus), AP09RT units connected to a multi-split outdoor unit (heat pump, MU2R17 Multi F).
 * LG AS-W123MMM9 single wall mounted unit from 2013, heat pump, replaces PREMTB10U controller ([source](https://github.com/JanM321/esphome-lg-controller/issues/1#issuecomment-1631718974)).
+* LG Artcool Gallery and 4 Way Cassette connected to LG MU3R19 Multi ([source](https://github.com/JanM321/esphome-lg-controller/issues/11)).
+* LG S12ET indoor unit ([source](https://github.com/JanM321/esphome-lg-controller/issues/3#issuecomment-1761040745)).
 
 Wired controllers must be connected to the CN-REMO socket on the indoor unit's PCB (green 3 pin JST-XH connector). Fortunately my wall units came with a short extension cable already plugged into that port so I only had to open up the bottom part of the unit to connect my controller.
 
