@@ -7,6 +7,14 @@ substitutions:
   devicename: "LG Living Room" # XXX
   # The input temperature sensor in HA.
   temperature_sensor_entity_id: sensor.my_sensor # XXX
+  # Over heating installer setting 15.
+  # Determines at which temperature the unit starts/stops heating.
+  #   0 = default behavior for unit
+  #   1 = +4C/+6C
+  #   2 = +2C/+4C
+  #   3 = -1C/+1C
+  #   4 = -0.5C/+0.5C
+  over_heating_installer_setting: "0" # XXX
 
 # Encryption key for HA. See https://esphome.io/components/api.html.
 api:

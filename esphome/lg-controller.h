@@ -21,12 +21,19 @@ class LgSwitch final : public Switch {
   }
 };
 
+// Installer settings that can be set in the YAML file.
+struct InstallerSettings {
+    // Installer setting 15.
+    uint8_t over_heating = 0;
+};
+
 class LgController final : public climate::Climate, public Component {
     static constexpr size_t MsgLen = 13;
     static constexpr int RxPin = 26; // Keep in sync with rx_pin in base.yaml.
 
     esphome::uart::UARTComponent* serial_;
     esphome::sensor::Sensor* temperature_sensor_;
+    esphome::template_::TemplateSelect* vane_select_;
 
     esphome::sensor::Sensor error_code_;
     esphome::binary_sensor::BinarySensor defrost_;
@@ -40,21 +47,38 @@ class LgController final : public climate::Climate, public Component {
     uint8_t recv_buf_[MsgLen] = {};
     uint32_t recv_buf_len_ = 0;
     uint32_t last_recv_millis_ = 0;
+
+    // Last received 0xC8 message.
     uint8_t last_recv_status_[MsgLen] = {};
 
-    uint8_t send_buf_[MsgLen] = {};
-    uint32_t last_sent_millis_ = 0;
-    bool pending_send_ = false;
+    // Last received 0xCA message.
+    uint8_t last_recv_type_a_settings_[MsgLen] = {};
 
-    bool pending_change_ = false;
+    // Last received 0xCB message.
+    uint8_t last_recv_type_b_settings_[MsgLen] = {};
+
+    uint8_t send_buf_[MsgLen] = {};
+    uint32_t last_sent_status_millis_ = 0;
+
+    enum class PendingSendKind : uint8_t { None, Status, TypeA, TypeB };
+    PendingSendKind pending_send_ = PendingSendKind::None;
+
+    bool pending_status_change_ = false;
+    bool pending_type_a_settings_change_ = false;
+    bool pending_type_b_settings_change_ = false;
 
     bool is_initializing_ = true;
 
+    InstallerSettings installer_settings_;
+    uint8_t vane_position_ = 0;
+
 public:
     LgController(esphome::uart::UARTComponent* serial,
-                 esphome::sensor::Sensor* temperature_sensor)
+                 esphome::sensor::Sensor* temperature_sensor,
+                 esphome::template_::TemplateSelect* vane_select)
       : serial_(serial),
         temperature_sensor_(temperature_sensor),
+        vane_select_(vane_select),
         purifier_(this),
         internal_thermistor_(this)
     {}
@@ -108,7 +132,7 @@ public:
             this->fan_mode = *call.get_fan_mode();
         }
         if (call.get_swing_mode().has_value()) {
-            this->swing_mode = *call.get_swing_mode();
+            set_swing_mode(*call.get_swing_mode());
         }
         this->set_changed();
         this->publish_state();
@@ -147,7 +171,26 @@ public:
     }
 
     void set_changed() {
-        pending_change_ = true;
+        pending_status_change_ = true;
+    }
+
+    void set_vane_position(int index) {
+        if (index < 0 || index > 6) {
+            ESP_LOGE(TAG, "Unexpected vane position: %d", index);
+            return;
+        }
+        if (vane_position_ == index) {
+            return;
+        }
+        ESP_LOGD(TAG, "Setting vane position: %d", index);
+        vane_position_ = index;
+        if (!is_initializing_) {
+            pending_type_a_settings_change_ = true;
+        }
+    }
+
+    InstallerSettings& installer_settings() {
+        return installer_settings_;
     }
 
     // Note: sensors and switches returned here must match the names in base.yaml.
@@ -194,13 +237,23 @@ private:
         return (result & 0xff) ^ 0x55;
     }
 
+    void set_swing_mode(ClimateSwingMode mode) {
+        if (this->swing_mode != mode) {
+            // If vertical swing is off, send a 0xAA message to restore the vane position.
+            if (mode == climate::CLIMATE_SWING_OFF || mode == climate::CLIMATE_SWING_HORIZONTAL) {
+                pending_type_a_settings_change_ = true;
+            }
+        }
+        this->swing_mode = mode;
+    }
+
     void send_status_message() {
         // Byte 0: status message (0x8) from the controller (0xA0).
         send_buf_[0] = 0xA8;
 
         // Byte 1: changed flag (0x1), power on (0x2), mode (0x1C), fan speed (0x70).
         uint8_t b = 0;
-        if (pending_change_) {
+        if (pending_status_change_) {
             b |= 0x1;
         }
         switch (this->mode) {
@@ -323,15 +376,61 @@ private:
         ESP_LOGD(TAG, "sending %s", format_hex_pretty(send_buf_, MsgLen).c_str());
         serial_->write_array(send_buf_, MsgLen);
 
-        pending_change_ = false;
-        pending_send_ = true;
-        last_sent_millis_ = millis();
+        pending_status_change_ = false;
+        pending_send_ = PendingSendKind::Status;
+        last_sent_status_millis_ = millis();
 
         // If we sent an updated temperature to the AC, update temperature in HA too.
         if (thermistor == ThermistorSetting::Controller && this->current_temperature != temp) {
             this->current_temperature = temp;
             publish_state();
         }
+    }
+
+    void send_type_a_settings_message() {
+        if (last_recv_type_a_settings_[0] != 0xCA) {
+            ESP_LOGE(TAG, "Unexpected missing CA message");
+            pending_type_a_settings_change_ = false;
+            return;
+        }
+
+        // Copy settings from the CA message we received.
+        memcpy(send_buf_, last_recv_type_a_settings_, MsgLen);
+        send_buf_[0] = 0xAA;
+
+        // Bytes 6-7 store vane positions.
+        send_buf_[7] = (send_buf_[7] & 0xf0) | vane_position_;
+
+        send_buf_[12] = calc_checksum(send_buf_);
+
+        ESP_LOGD(TAG, "sending %s", format_hex_pretty(send_buf_, MsgLen).c_str());
+        serial_->write_array(send_buf_, MsgLen);
+
+        pending_type_a_settings_change_ = false;
+        pending_send_ = PendingSendKind::TypeA;
+    }
+
+    void send_type_b_settings_message() {
+        if (last_recv_type_b_settings_[0] != 0xCB) {
+            ESP_LOGE(TAG, "Unexpected missing CB message");
+            pending_type_b_settings_change_ = false;
+            return;
+        }
+
+        // Copy settings from the CB message we received.
+        memcpy(send_buf_, last_recv_type_b_settings_, MsgLen);
+        send_buf_[0] = 0xAB;
+
+        // Byte 2 stores installer setting 15. Set to value from the YAML file.
+        send_buf_[2] = (send_buf_[2] & 0xC7) | ((installer_settings_.over_heating & 0xf) << 3);
+
+        send_buf_[12] = calc_checksum(send_buf_);
+
+        ESP_LOGD(TAG, "sending %s", format_hex_pretty(send_buf_, MsgLen).c_str());
+        serial_->write_array(send_buf_, MsgLen);
+
+        pending_type_b_settings_change_ = false;
+        pending_send_ = PendingSendKind::TypeB;
     }
 
     void process_message(const uint8_t* buffer, bool* had_error) {
@@ -350,17 +449,28 @@ private:
             return;
         }
 
-        if (pending_send_ && memcmp(send_buf_, buffer, MsgLen) == 0) {
+        if (pending_send_ != PendingSendKind::None && memcmp(send_buf_, buffer, MsgLen) == 0) {
             ESP_LOGD(TAG, "verified send");
-            pending_send_ = false;
+            pending_send_ = PendingSendKind::None;
             return;
         }
 
-        // We're only interested in status messages (0x8) from the AC (0xC0).
-        if (buffer[0] != 0xC8) {
+        // We're only interested in status or settings messages from the AC.
+        if (buffer[0] == 0xC8) {
+            process_status_message(buffer, had_error);
             return;
         }
+        if (buffer[0] == 0xCA) {
+            process_type_a_settings_message(buffer);
+            return;
+        }
+        if (buffer[0] == 0xCB) {
+            process_type_b_settings_message(buffer);
+            return;
+        }
+    }
 
+    void process_status_message(const uint8_t* buffer, bool* had_error) {
         // If we just had a failure, ignore this messsage because it might be invalid too.
         if (*had_error) {
             ESP_LOGE(TAG, "ignoring due to previous error %s",
@@ -402,11 +512,11 @@ private:
 
         // Don't update our settings if we have a pending change/send, because else we overwrite
         // changes we still have to send (or are sending) to the AC.
-        if (pending_change_) {
+        if (pending_status_change_) {
             ESP_LOGD(TAG, "ignoring because pending change");
             return;
         }
-        if (pending_send_) {
+        if (pending_send_ == PendingSendKind::Status) {
             ESP_LOGD(TAG, "ignoring because pending send");
             return;
         }
@@ -467,13 +577,13 @@ private:
         bool horiz_swing = buffer[2] & 0x40;
         bool vert_swing = buffer[2] & 0x80;
         if (horiz_swing && vert_swing) {
-            this->swing_mode = climate::CLIMATE_SWING_BOTH;
+            set_swing_mode(climate::CLIMATE_SWING_BOTH);
         } else if (horiz_swing) {
-            this->swing_mode = climate::CLIMATE_SWING_HORIZONTAL;
+            set_swing_mode(climate::CLIMATE_SWING_HORIZONTAL);
         } else if (vert_swing) {
-            this->swing_mode = climate::CLIMATE_SWING_VERTICAL;
+            set_swing_mode(climate::CLIMATE_SWING_VERTICAL);
         } else {
-            this->swing_mode = climate::CLIMATE_SWING_OFF;
+            set_swing_mode(climate::CLIMATE_SWING_OFF);
         }
 
         this->target_temperature = float((buffer[6] & 0xf) + 15);
@@ -482,6 +592,33 @@ private:
         }
 
         publish_state();
+    }
+
+    void process_type_a_settings_message(const uint8_t* buffer) {
+        // Send settings the first time we receive a 0xCA message.
+        bool first_time = last_recv_type_a_settings_[0] == 0;
+        memcpy(last_recv_type_a_settings_, buffer, MsgLen);
+        if (first_time) {
+            pending_type_a_settings_change_ = true;
+        }
+
+        // Handle vane position change.
+        uint8_t vane = buffer[7] & 0xf;
+        if (vane <= 6) {
+            vane_position_ = vane;
+            vane_select_->publish_state(*vane_select_->at(vane));
+        } else {
+            ESP_LOGE(TAG, "Unexpected vane position: %u", vane);
+        }
+    }
+
+    void process_type_b_settings_message(const uint8_t* buffer) {
+        // Send installer settings the first time we receive a 0xCB message.
+        bool first_time = last_recv_type_b_settings_[0] == 0;
+        memcpy(last_recv_type_b_settings_, buffer, MsgLen);
+        if (first_time) {
+            pending_type_b_settings_change_ = true;
+        }
     }
 
     void update() {
@@ -503,10 +640,23 @@ private:
         // If we did not receive the message we sent last time, try to send it again next time.
         // Ignore this when we're initializing because the unit then immediately responds by
         // sending a lot of messages and this introduces a delay.
-        if (pending_send_ && !is_initializing_) {
+        if (pending_send_ != PendingSendKind::None && !is_initializing_) {
             ESP_LOGE(TAG, "did not receive message we just sent");
-            pending_send_ = false;
-            pending_change_ = true;
+            switch (pending_send_) {
+                case PendingSendKind::Status:
+                    pending_status_change_ = true;
+                    break;
+                case PendingSendKind::TypeA:
+                    pending_type_a_settings_change_ = true;
+                    break;
+                case PendingSendKind::TypeB:
+                    pending_type_b_settings_change_ = true;
+                    break;
+                case PendingSendKind::None:
+                    ESP_LOGE(TAG, "unreachable");
+                    break;
+            }
+            pending_send_ = PendingSendKind::None;
             return;
         }
 
@@ -524,7 +674,10 @@ private:
         }
 
         // Send a status message every 20 seconds, or now if we have a pending change.
-        if (!pending_change_ && millis() - last_sent_millis_ < 20 * 1000) {
+        if (!pending_status_change_ &&
+            !pending_type_a_settings_change_ &&
+            !pending_type_b_settings_change_ &&
+            millis() - last_sent_status_millis_ < 20 * 1000) {
             return;
         }
 
@@ -553,7 +706,13 @@ private:
             delay(5);
         }
 
-        send_status_message();
+        if (pending_type_a_settings_change_) {
+            send_type_a_settings_message();
+        } else if (pending_type_b_settings_change_) {
+            send_type_b_settings_message();
+        } else {
+            send_status_message();
+        }
     }
 };
 

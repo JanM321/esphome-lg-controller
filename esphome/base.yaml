@@ -45,10 +45,29 @@ switch:
       - name: Air Purifier
       - name: Internal Thermistor
 
+select:
+  - platform: template
+    name: Airflow Up/Down
+    id: vane_position
+    optimistic: true
+    icon: mdi:arrow-up-down
+    options:
+      - "0 (Default)"
+      - "1 (Up)"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6 (Down)"
+    on_value:
+      - lambda: |-
+          ((LgController*)id(${deviceid}))->set_vane_position(i);
+
 climate:
   - platform: custom
     lambda: |-
-      auto* controller = new LgController(id(ac_serial), id(temperature_sensor));
+      auto* controller = new LgController(id(ac_serial), id(temperature_sensor), id(vane_position));
+      controller->installer_settings().over_heating = ${over_heating_installer_setting};
       App.register_component(controller);
       return {controller};
     climates:

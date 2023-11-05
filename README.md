@@ -38,9 +38,11 @@ Features currently available in Home Assistant:
 * Use of a Home Assistant temperature sensor for room temperature (rounded to nearest 0.5°C). 
 * Fan mode (low, medium, high, auto).
 * Swing mode (off, vertical, horizontal, both).
+* Airflow up/down setting from 1-6 (vertical vane angle).
 * Switch for external vs internal thermistor.
 * Switch for air purifier (plasma) on/off.
 * Sensors for reporting outdoor unit on/off, defrost, preheat, error code.
+* YAML option for installer setting 15 (to change over heating behavior in heating mode).
 
 The LG ThinQ app and wireless remote can still be used to change these settings and other settings. They'll be synchronized with this controller.
 
