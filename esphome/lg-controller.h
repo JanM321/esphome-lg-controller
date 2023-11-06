@@ -2,6 +2,9 @@
 
 static const char* const TAG = "lg-controller";
 
+#define MIN_TEMP_SETPOINT 16
+#define MAX_TEMP_SETPOINT 30
+
 class LgController;
 
 // Custom switch. Notifies the controller when state changes in HA.
@@ -163,8 +166,8 @@ public:
         traits.set_supports_current_temperature(true);
         traits.set_supports_two_point_target_temperature(false);
         traits.set_supports_action(false);
-        traits.set_visual_min_temperature(18);
-        traits.set_visual_max_temperature(30);
+        traits.set_visual_min_temperature(MIN_TEMP_SETPOINT);
+        traits.set_visual_max_temperature(MAX_TEMP_SETPOINT);
         traits.set_visual_current_temperature_step(0.5);
         traits.set_visual_target_temperature_step(0.5);
         return traits;
@@ -328,10 +331,10 @@ private:
         send_buf_[4] = last_recv_status_[4];
 
         float target = this->target_temperature;
-        if (target < 18) {
-            target = 18;
-        } else if (target > 30) {
-            target = 30;
+        if (target < MIN_TEMP_SETPOINT) {
+            target = MIN_TEMP_SETPOINT;
+        } else if (target > MAX_TEMP_SETPOINT) {
+            target = MAX_TEMP_SETPOINT;
         }
 
         // Byte 5. Unchanged except for the low bit which indicates the target temperature has a
