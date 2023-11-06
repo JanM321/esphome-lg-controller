@@ -468,6 +468,12 @@ private:
             process_type_b_settings_message(buffer);
             return;
         }
+        if (buffer[0] == 0xC9) {
+            // Capabilities message. The unit sends this with the other settings so we're now
+            // initialized.
+            is_initializing_ = false;
+            return;
+        }
     }
 
     void process_status_message(const uint8_t* buffer, bool* had_error) {
@@ -522,7 +528,6 @@ private:
         }
 
         memcpy(last_recv_status_, buffer, MsgLen);
-        is_initializing_ = false;
 
         uint8_t b = buffer[1];
         if ((b & 0x2) == 0) {
