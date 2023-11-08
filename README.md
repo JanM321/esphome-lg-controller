@@ -48,7 +48,7 @@ The LG ThinQ app and wireless remote can still be used to change these settings 
 
 # Hardware
 
-***Update November 2023: This section is for my original PCB in the hardware/ directory. [Florian Brede](https://github.com/florianbrede-ayet) has designed a smaller and cheaper PCB that can be ordered from JLCPCB, it's in the hardware-tiny/ directory.***
+***❗ Update November 2023: This section is for my original PCB in the hardware/ directory. [Florian Brede](https://github.com/florianbrede-ayet) has designed a smaller and cheaper PCB that can be ordered from JLCPCB. It's in the hardware-tiny/ directory.***
 
 <img src="hardware/schematic.png" width="100%" height="100%">
 
