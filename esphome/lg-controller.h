@@ -87,7 +87,7 @@ class LgController final : public climate::Climate, public Component {
     uint8_t fan_speed_[4] = {0,0,0,0};
 
 
-    uint32_t NVS_STORAGE_VERSION = 2843654U;
+    uint32_t NVS_STORAGE_VERSION = 2843654U; // Change version if the NVSStorage struct changes
     struct NVSStorage {
         uint8_t capabilities_message[13] = {};
     };
@@ -95,6 +95,7 @@ class LgController final : public climate::Climate, public Component {
 
     enum LgCapability {
     PURIFIER,
+    FAN_AUTO,
     FAN_SLOW,
     FAN_LOW,
     FAN_LOW_MEDIUM,
@@ -109,14 +110,15 @@ class LgController final : public climate::Climate, public Component {
     HAS_TWO_VANES,
     HAS_FOUR_VANES,
     VERTICAL_SWING,
-    HORIZONTAL_SWING,
-    _CAPABILITY_COUNT
+    HORIZONTAL_SWING
     };
 
     bool parse_capability(LgCapability capability) {
         switch (capability) {
             case PURIFIER:
                 return (nvs_storage_.capabilities_message[2] & 0x04) != 0;
+            case FAN_AUTO:
+                return (nvs_storage_.capabilities_message[3] & 0x1 ) != 0;
             case FAN_SLOW:
                 return (nvs_storage_.capabilities_message[3] & 0x20) != 0;
             case FAN_LOW:
@@ -154,7 +156,6 @@ class LgController final : public climate::Climate, public Component {
     }
 
     void configure_capabilities() {
-
         // Default traits
         supported_traits_.set_supported_modes({
             climate::CLIMATE_MODE_OFF,
@@ -184,8 +185,9 @@ class LgController final : public climate::Climate, public Component {
         supported_traits_.set_visual_current_temperature_step(0.5);
         supported_traits_.set_visual_target_temperature_step(0.5);
 
+        // Only override defaults if the capabilities are known
         if (nvs_storage_.capabilities_message[0] != 0) {
-
+            // Configure the climate traits
             std::set<climate::ClimateMode> device_modes;
             device_modes.insert(climate::CLIMATE_MODE_OFF);
             device_modes.insert(climate::CLIMATE_MODE_COOL);
@@ -200,6 +202,8 @@ class LgController final : public climate::Climate, public Component {
             supported_traits_.set_supported_modes(device_modes);
             
             std::set<climate::ClimateFanMode> fan_modes;
+            if (parse_capability(LgCapability::FAN_AUTO))
+                fan_modes.insert(climate::CLIMATE_FAN_AUTO);
             if (parse_capability(LgCapability::FAN_SLOW))
                 fan_modes.insert(climate::CLIMATE_FAN_QUIET);
             if (parse_capability(LgCapability::FAN_LOW))
@@ -221,7 +225,7 @@ class LgController final : public climate::Climate, public Component {
             supported_traits_.set_supported_swing_modes(swing_modes);
             
 
-            // Disable unsupported entities if capabilities are known
+            // Disable unsupported entities
             vane_select_1_->set_internal(true);
             vane_select_2_->set_internal(true);
             vane_select_3_->set_internal(true);
@@ -291,7 +295,6 @@ public:
         purifier_(this),
         internal_thermistor_(this)
     {
-        ESP_LOGD(TAG, "----------> CALL: LgController()");
     }
 
     float get_setup_priority() const override {
@@ -299,8 +302,7 @@ public:
     }
 
     void setup() override {
-        ESP_LOGD(TAG, "----------> CALL: setup()");
-
+        // Load our custom NVS storage to get the capabilities message
         ESPPreferenceObject pref = global_preferences->make_preference<NVSStorage>(this->get_object_id_hash() ^ NVS_STORAGE_VERSION);
         pref.load(&nvs_storage_);
 
@@ -325,6 +327,7 @@ public:
         internal_thermistor_.restore_and_set_mode(esphome::switch_::SWITCH_RESTORE_DEFAULT_OFF);
 
 
+        // Configure climate traits and entities based on the capabilities message (if available)
         configure_capabilities();
         
 
@@ -359,7 +362,6 @@ public:
     }
 
     climate::ClimateTraits traits() override {
-        ESP_LOGD(TAG, "----------> CALL: traits()");
         return supported_traits_;
     }
 
@@ -367,6 +369,7 @@ public:
         pending_status_change_ = true;
     }
 
+    // Sets position of vane index (1-4) to position (0-6).
     void set_vane_position(int index, int position) {
         if (index < 1 || index > 4) {
             ESP_LOGE(TAG, "Unexpected vane index: %d", index);
@@ -386,6 +389,7 @@ public:
         }
     }
 
+    // Sets installer setting fan speed index (0-3 for slow-high) to value (0-255), with "0" being the factory default
     void set_fan_speed(int index, int value) {
         if (index < 0 || index > 3) {
             ESP_LOGE(TAG, "Unexpected fan speed index: %d", index);
@@ -618,7 +622,7 @@ private:
         memcpy(send_buf_, last_recv_type_a_settings_, MsgLen);
         send_buf_[0] = 0xAA;
 
-        // Bytes 2-6 store the fan speeds
+        // Bytes 2-6 store the installer fan speeds
         send_buf_[2] = fan_speed_[0];
         send_buf_[3] = fan_speed_[1];
         send_buf_[4] = fan_speed_[2];
@@ -711,8 +715,8 @@ private:
                 ESPPreferenceObject pref = global_preferences->make_preference<NVSStorage>(this->get_object_id_hash() ^ NVS_STORAGE_VERSION);
                 memcpy(nvs_storage_.capabilities_message, buffer, MsgLen);
 
-                // if no capabilities were stored in NVS before, restart to make sure we get the correct traits for climate
-                // no restart on changes to make sure we don't end up in a bootloop for faulty devices / communication
+                // If no capabilities were stored in NVS before, restart to make sure we get the correct traits for climate
+                // No restart just on changes (which is unlikely anyway) to make sure we don't end up in a bootloop for faulty devices / communication
                 if (needsRestart) {
                     pref.save(&nvs_storage_);
                     global_preferences->sync();
@@ -823,6 +827,9 @@ private:
                 break;
             case 3:
                 this->fan_mode = climate::CLIMATE_FAN_AUTO;
+                break;
+            case 4:
+                this->fan_mode = climate::CLIMATE_FAN_QUIET;
                 break;
             default:
                 ESP_LOGE(TAG, "received unexpected fan mode from AC (%u)", fan_val);
