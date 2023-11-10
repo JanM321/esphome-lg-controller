@@ -47,6 +47,9 @@ Features currently available in Home Assistant:
 The LG ThinQ app and wireless remote can still be used to change these settings and other settings. They'll be synchronized with this controller.
 
 # Hardware
+
+***❗ Update November 2023: This section is for my original PCB in the hardware/ directory. [Florian Brede](https://github.com/florianbrede-ayet) has designed a smaller and cheaper PCB that can be ordered from JLCPCB. It's in the hardware-tiny/ directory.***
+
 <img src="hardware/schematic.png" width="100%" height="100%">
 
 See [hardware/](hardware/) for schematic and list of materials. This part was based on the excellent work and research by [@Flameeyes](https://github.com/Flameeyes):
@@ -60,7 +63,7 @@ A devkit module is nice for this because it doesn't need any external components
 3) **Voltage regulator**. This is needed because the AC supplies 12V but the microcontroller requires 3.3V. I replaced the voltage regulator part with a [Traco Power TSRN 1-2433](https://www.tracopower.com/int/model/tsrn-1-2433) step-down switching regulator because it doesn't require any external components such as capacitors or inductors. (In hindsight, the [Traco Power TSR 1-2433](https://www.tracopower.com/int/model/tsr-1-2433) might have been better because it's cheaper and has better availability.)
 4) **Connector**. To connect the PCB to the AC. I used a screw terminal for this.
 
-My PCB also has some capacitors, resistors and diodes that are based on the TLIN1027DRQ1 data sheet. I'm not sure if these are really necessary but I included them to be safe and it works well. I used SMT components if available because I had the PCBs assembled by [PCBWay](https://www.pcbway.com/).
+My PCB also has some capacitors, resistors and diodes that are based on the TLIN1027DRQ1 data sheet. I'm not sure if these are really necessary but I included them to be safe and it works well. I used SMT components if available because I had the PCBs assembled by [PCBWay](https://www.pcbway.com/). _Update november 2023: the hardware-tiny/ PCB can be ordered from JLCPCB._
 
 Note: an alternative for the LIN transceiver is the opto-isolator design used here:
 * https://github.com/AussieMakerGeek/LG_Aircon_MQTT_interface
