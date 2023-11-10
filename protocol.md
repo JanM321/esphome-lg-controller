@@ -98,7 +98,8 @@ The AC sends this to the controller when it's powered on to tell it which featur
 | 1 | 0000_XXXX: unknown |
 |   | 000X_0000: supports zone state installer setting |
 |   | 00X0_0000: supports swirl |
-|   | XX00_0000: supports horizontal/vertical swing if both are set |
+|   | X000_0000: supports vertical swing |
+|   | 0X00_0000: supports horizontal swing |
 | 2 | 0000_000X: supports Fan Auto sub function |
 |   | 0000_00X0: supports plasma (air purifier) |
 |   | 0000_0X00: supports humidifier |
@@ -107,18 +108,18 @@ The AC sends this to the controller when it's powered on to tell it which featur
 |   | 00X0_0000: supports operation mode Heating |
 |   | 0X00_0000: supports operation mode Fan |
 |   | X000_0000: supports operation mode Dehumidify |
-| 3 | supported fan options. auto (0x1), power (0x2, available in heating mode: 0x80?), medium (0x8), low (0x10?), slow (0x20?), high (always available?) |
+| 3 | supported fan options. auto (0x1), power (0x2, available in heating mode: 0x80?), medium (0x8), low (0x10?), slow (0x20), high (always available?) |
 | 4 | 0000_000X: supports vertical vane control |
 |   | 0000_00X0: supports ESP value installer setting |
 |   | 0000_0X00: supports static pressure installer setting |
 |   | 0000_X000: supports ceiling height installer setting |
-|   | 00XX_0000: unknown
+|   | 00XX_0000: unknown (might be 4 vanes?)
 |   | 0X00_0000: supports robot clean setting |
 |   | X000_0000: supports auto clean setting |
 | 5 | 0000_000X: supports energy saving sub function |
 |   | 0000_00X0: supports override master/slave installer setting |
 |   | 0000_0X00: supports auto change temperature setting |
-|   | 000X_X000: unknown
+|   | 000X_X000: unknown (might be 4 vanes?)
 |   | 00X0_0000: half degrees C not supported |
 |   | 0X00_0000: has single vane |
 |   | X000_0000: has two vanes |
