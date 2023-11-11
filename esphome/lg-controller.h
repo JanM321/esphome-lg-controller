@@ -34,9 +34,19 @@ class LgController final : public climate::Climate, public Component {
     static constexpr size_t MsgLen = 13;
     static constexpr int RxPin = 26; // Keep in sync with rx_pin in base.yaml.
 
+    climate::ClimateTraits supported_traits_;    
+
     esphome::uart::UARTComponent* serial_;
     esphome::sensor::Sensor* temperature_sensor_;
-    esphome::template_::TemplateSelect* vane_select_;
+    esphome::template_::TemplateSelect* vane_select_1_;
+    esphome::template_::TemplateSelect* vane_select_2_;
+    esphome::template_::TemplateSelect* vane_select_3_;
+    esphome::template_::TemplateSelect* vane_select_4_;
+
+    esphome::template_::TemplateNumber* fan_speed_slow_;
+    esphome::template_::TemplateNumber* fan_speed_low_;
+    esphome::template_::TemplateNumber* fan_speed_medium_;
+    esphome::template_::TemplateNumber* fan_speed_high_;
 
     esphome::sensor::Sensor error_code_;
     esphome::binary_sensor::BinarySensor defrost_;
@@ -73,24 +83,229 @@ class LgController final : public climate::Climate, public Component {
     bool is_initializing_ = true;
 
     InstallerSettings installer_settings_;
-    uint8_t vane_position_ = 0;
+    uint8_t vane_position_[4] = {0,0,0,0};
+    uint8_t fan_speed_[4] = {0,0,0,0};
+
+
+    uint32_t NVS_STORAGE_VERSION = 2843654U; // Change version if the NVSStorage struct changes
+    struct NVSStorage {
+        uint8_t capabilities_message[13] = {};
+    };
+    NVSStorage nvs_storage_;
+
+    enum LgCapability {
+    PURIFIER,
+    FAN_AUTO,
+    FAN_SLOW,
+    FAN_LOW,
+    FAN_LOW_MEDIUM,
+    FAN_MEDIUM,
+    FAN_MEDIUM_HIGH,
+    FAN_HIGH,
+    MODE_HEATING,
+    MODE_FAN,
+    MODE_AUTO,
+    MODE_DEHUMIDIFY,
+    HAS_ONE_VANE,
+    HAS_TWO_VANES,
+    HAS_FOUR_VANES,
+    VERTICAL_SWING,
+    HORIZONTAL_SWING
+    };
+
+    bool parse_capability(LgCapability capability) {
+        switch (capability) {
+            case PURIFIER:
+                return (nvs_storage_.capabilities_message[2] & 0x02) != 0;
+            case FAN_AUTO:
+                return (nvs_storage_.capabilities_message[3] & 0x1 ) != 0;
+            case FAN_SLOW:
+                return (nvs_storage_.capabilities_message[3] & 0x20) != 0;
+            case FAN_LOW:
+                return (nvs_storage_.capabilities_message[3] & 0x10) != 0;
+            case FAN_LOW_MEDIUM:
+                return (nvs_storage_.capabilities_message[6] & 0x10) != 0;
+            case FAN_MEDIUM:
+                return (nvs_storage_.capabilities_message[3] & 0x08) != 0;
+            case FAN_MEDIUM_HIGH:
+                return (nvs_storage_.capabilities_message[6] & 0x20) != 0;
+            case FAN_HIGH:
+                return true;
+            case MODE_HEATING:
+                return (nvs_storage_.capabilities_message[2] & 0x40) != 0;
+            case MODE_FAN:
+                return (nvs_storage_.capabilities_message[2] & 0x80) != 0;
+            case MODE_AUTO:
+                return (nvs_storage_.capabilities_message[2] & 0x08) != 0;
+            case MODE_DEHUMIDIFY:
+                return (nvs_storage_.capabilities_message[2] & 0x80) != 0;
+            case HAS_ONE_VANE:
+                return (nvs_storage_.capabilities_message[5] & 0x40) != 0;
+            case HAS_TWO_VANES:
+                return (nvs_storage_.capabilities_message[5] & 0x80) != 0;
+            case HAS_FOUR_VANES:
+                // actual flag is unknown, assume 4 vanes if neither 1 nor 2 vanes are supported
+                return (nvs_storage_.capabilities_message[5] & 0x40) == 0 && (nvs_storage_.capabilities_message[5] & 0x80) == 0;
+            case VERTICAL_SWING:
+                return (nvs_storage_.capabilities_message[1] & 0x80) != 0;
+            case HORIZONTAL_SWING:
+                return (nvs_storage_.capabilities_message[1] & 0x40) != 0;
+            default:
+                return false;
+        }
+    }
+
+    void configure_capabilities() {
+        // Default traits
+        supported_traits_.set_supported_modes({
+            climate::CLIMATE_MODE_OFF,
+            climate::CLIMATE_MODE_COOL,
+            climate::CLIMATE_MODE_HEAT,
+            climate::CLIMATE_MODE_DRY,
+            climate::CLIMATE_MODE_FAN_ONLY,
+            climate::CLIMATE_MODE_HEAT_COOL,
+        });
+        supported_traits_.set_supported_fan_modes({
+            climate::CLIMATE_FAN_LOW,
+            climate::CLIMATE_FAN_MEDIUM,
+            climate::CLIMATE_FAN_HIGH,
+            climate::CLIMATE_FAN_AUTO,
+        });
+        supported_traits_.set_supported_swing_modes({
+            climate::CLIMATE_SWING_OFF,
+            climate::CLIMATE_SWING_BOTH,
+            climate::CLIMATE_SWING_VERTICAL,
+            climate::CLIMATE_SWING_HORIZONTAL,
+        });
+        supported_traits_.set_supports_current_temperature(true);
+        supported_traits_.set_supports_two_point_target_temperature(false);
+        supported_traits_.set_supports_action(false);
+        supported_traits_.set_visual_min_temperature(MIN_TEMP_SETPOINT);
+        supported_traits_.set_visual_max_temperature(MAX_TEMP_SETPOINT);
+        supported_traits_.set_visual_current_temperature_step(0.5);
+        supported_traits_.set_visual_target_temperature_step(0.5);
+
+        // Only override defaults if the capabilities are known
+        if (nvs_storage_.capabilities_message[0] != 0) {
+            // Configure the climate traits
+            std::set<climate::ClimateMode> device_modes;
+            device_modes.insert(climate::CLIMATE_MODE_OFF);
+            device_modes.insert(climate::CLIMATE_MODE_COOL);
+            if (parse_capability(LgCapability::MODE_HEATING))
+                device_modes.insert(climate::CLIMATE_MODE_HEAT);
+            if (parse_capability(LgCapability::MODE_FAN))
+                device_modes.insert(climate::CLIMATE_MODE_FAN_ONLY);
+            if (parse_capability(LgCapability::MODE_AUTO))
+                device_modes.insert(climate::CLIMATE_MODE_HEAT_COOL);
+            if (parse_capability(LgCapability::MODE_DEHUMIDIFY))
+                device_modes.insert(climate::CLIMATE_MODE_DRY);
+            supported_traits_.set_supported_modes(device_modes);
+            
+            std::set<climate::ClimateFanMode> fan_modes;
+            if (parse_capability(LgCapability::FAN_AUTO))
+                fan_modes.insert(climate::CLIMATE_FAN_AUTO);
+            if (parse_capability(LgCapability::FAN_SLOW))
+                fan_modes.insert(climate::CLIMATE_FAN_QUIET);
+            if (parse_capability(LgCapability::FAN_LOW))
+                fan_modes.insert(climate::CLIMATE_FAN_LOW);
+            if (parse_capability(LgCapability::FAN_MEDIUM))
+                fan_modes.insert(climate::CLIMATE_FAN_MEDIUM);
+            if (parse_capability(LgCapability::FAN_HIGH))
+                fan_modes.insert(climate::CLIMATE_FAN_HIGH);
+            supported_traits_.set_supported_fan_modes(fan_modes);
+
+            std::set<climate::ClimateSwingMode> swing_modes;
+            swing_modes.insert(climate::CLIMATE_SWING_OFF);
+            if (parse_capability(LgCapability::VERTICAL_SWING) && parse_capability(LgCapability::HORIZONTAL_SWING))
+                swing_modes.insert(climate::CLIMATE_SWING_BOTH);
+            if (parse_capability(LgCapability::VERTICAL_SWING))
+                swing_modes.insert(climate::CLIMATE_SWING_VERTICAL);
+            if (parse_capability(LgCapability::HORIZONTAL_SWING))
+                swing_modes.insert(climate::CLIMATE_SWING_HORIZONTAL);
+            supported_traits_.set_supported_swing_modes(swing_modes);
+            
+
+            // Disable unsupported entities
+            vane_select_1_->set_internal(true);
+            vane_select_2_->set_internal(true);
+            vane_select_3_->set_internal(true);
+            vane_select_4_->set_internal(true);
+
+            if (parse_capability(LgCapability::HAS_ONE_VANE)) {
+                vane_select_1_->set_internal(false);
+            }
+            else if (parse_capability(LgCapability::HAS_TWO_VANES)) {
+                vane_select_1_->set_internal(false);
+                vane_select_2_->set_internal(false);
+            }
+            else if (parse_capability(LgCapability::HAS_FOUR_VANES)) {
+                vane_select_1_->set_internal(false);
+                vane_select_2_->set_internal(false);
+                vane_select_3_->set_internal(false);
+                vane_select_4_->set_internal(false);
+            }
+
+            if (parse_capability(LgCapability::FAN_SLOW)) {
+                fan_speed_slow_->set_internal(false);
+            } else {
+                fan_speed_slow_->set_internal(true);
+            }
+            if (parse_capability(LgCapability::FAN_LOW)) {
+                fan_speed_low_->set_internal(false);
+            } else {
+                fan_speed_low_->set_internal(true);
+            }
+            if (parse_capability(LgCapability::FAN_MEDIUM)) {
+                fan_speed_medium_->set_internal(false);
+            } else {
+                fan_speed_medium_->set_internal(true);
+            }
+            if (parse_capability(LgCapability::FAN_HIGH)) {
+                fan_speed_high_->set_internal(false);
+            } else {
+                fan_speed_high_->set_internal(true);
+            }
+
+            purifier_.set_internal(!parse_capability(LgCapability::PURIFIER));        
+        }
+    }  
 
 public:
     LgController(esphome::uart::UARTComponent* serial,
                  esphome::sensor::Sensor* temperature_sensor,
-                 esphome::template_::TemplateSelect* vane_select)
+                 esphome::template_::TemplateSelect* vane_select_1, 
+                 esphome::template_::TemplateSelect* vane_select_2, 
+                 esphome::template_::TemplateSelect* vane_select_3, 
+                 esphome::template_::TemplateSelect* vane_select_4,
+                 esphome::template_::TemplateNumber* fan_speed_slow,
+                 esphome::template_::TemplateNumber* fan_speed_low,
+                 esphome::template_::TemplateNumber* fan_speed_medium,
+                 esphome::template_::TemplateNumber* fan_speed_high
+                 )
       : serial_(serial),
         temperature_sensor_(temperature_sensor),
-        vane_select_(vane_select),
+        vane_select_1_(vane_select_1),
+        vane_select_2_(vane_select_2),
+        vane_select_3_(vane_select_3),
+        vane_select_4_(vane_select_4),
+        fan_speed_slow_(fan_speed_slow),
+        fan_speed_low_(fan_speed_low),
+        fan_speed_medium_(fan_speed_medium),
+        fan_speed_high_(fan_speed_high),
         purifier_(this),
         internal_thermistor_(this)
-    {}
+    {
+    }
 
     float get_setup_priority() const override {
         return esphome::setup_priority::BUS;
     }
 
     void setup() override {
+        // Load our custom NVS storage to get the capabilities message
+        ESPPreferenceObject pref = global_preferences->make_preference<NVSStorage>(this->get_object_id_hash() ^ NVS_STORAGE_VERSION);
+        pref.load(&nvs_storage_);
+
         auto restore = this->restore_state_();
         if (restore.has_value()) {
             restore->apply(this);
@@ -110,6 +325,11 @@ public:
 
         internal_thermistor_.set_icon("mdi:thermometer");
         internal_thermistor_.restore_and_set_mode(esphome::switch_::SWITCH_RESTORE_DEFAULT_OFF);
+
+
+        // Configure climate traits and entities based on the capabilities message (if available)
+        configure_capabilities();
+        
 
         while (serial_->available() > 0) {
             uint8_t b;
@@ -142,51 +362,49 @@ public:
     }
 
     climate::ClimateTraits traits() override {
-        climate::ClimateTraits traits;
-        traits.set_supported_modes({
-            climate::CLIMATE_MODE_OFF,
-            climate::CLIMATE_MODE_COOL,
-            climate::CLIMATE_MODE_HEAT,
-            climate::CLIMATE_MODE_DRY,
-            climate::CLIMATE_MODE_FAN_ONLY,
-            climate::CLIMATE_MODE_HEAT_COOL,
-        });
-        traits.set_supported_fan_modes({
-            climate::CLIMATE_FAN_LOW,
-            climate::CLIMATE_FAN_MEDIUM,
-            climate::CLIMATE_FAN_HIGH,
-            climate::CLIMATE_FAN_AUTO,
-        });
-        traits.set_supported_swing_modes({
-            climate::CLIMATE_SWING_OFF,
-            climate::CLIMATE_SWING_BOTH,
-            climate::CLIMATE_SWING_VERTICAL,
-            climate::CLIMATE_SWING_HORIZONTAL,
-        });
-        traits.set_supports_current_temperature(true);
-        traits.set_supports_two_point_target_temperature(false);
-        traits.set_supports_action(false);
-        traits.set_visual_min_temperature(MIN_TEMP_SETPOINT);
-        traits.set_visual_max_temperature(MAX_TEMP_SETPOINT);
-        traits.set_visual_current_temperature_step(0.5);
-        traits.set_visual_target_temperature_step(0.5);
-        return traits;
+        return supported_traits_;
     }
 
     void set_changed() {
         pending_status_change_ = true;
     }
 
-    void set_vane_position(int index) {
-        if (index < 0 || index > 6) {
-            ESP_LOGE(TAG, "Unexpected vane position: %d", index);
+    // Sets position of vane index (1-4) to position (0-6).
+    void set_vane_position(int index, int position) {
+        if (index < 1 || index > 4) {
+            ESP_LOGE(TAG, "Unexpected vane index: %d", index);
             return;
         }
-        if (vane_position_ == index) {
+        if (position < 0 || position > 6) {
+            ESP_LOGE(TAG, "Unexpected vane position: %d", position);
             return;
         }
-        ESP_LOGD(TAG, "Setting vane position: %d", index);
-        vane_position_ = index;
+        if (vane_position_[index-1] == position) {
+            return;
+        }
+        ESP_LOGD(TAG, "Setting vane %d position: %d", index, position);
+        vane_position_[index-1] = position;
+        if (!is_initializing_) {
+            pending_type_a_settings_change_ = true;
+        }
+    }
+
+    // Sets installer setting fan speed index (0-3 for slow-high) to value (0-255), with "0" being the factory default
+    void set_fan_speed(int index, int value) {
+        if (index < 0 || index > 3) {
+            ESP_LOGE(TAG, "Unexpected fan speed index: %d", index);
+            return;
+        }
+        if (value<0 || value>255) {
+            ESP_LOGE(TAG, "Unexpected fan speed: %d", value);
+            return;
+        }
+
+        if (fan_speed_[index] == value) {
+            return;
+        }
+
+        fan_speed_[index] = value;
         if (!is_initializing_) {
             pending_type_a_settings_change_ = true;
         }
@@ -296,6 +514,9 @@ private:
             case climate::CLIMATE_FAN_AUTO:
                 b |= 3 << 5;
                 break;
+            case climate::CLIMATE_FAN_QUIET:
+                b |= 4 << 5;
+                break;
             default:
                 ESP_LOGE(TAG, "unknown fan mode, using Medium");
                 b |= 1 << 5;
@@ -401,8 +622,18 @@ private:
         memcpy(send_buf_, last_recv_type_a_settings_, MsgLen);
         send_buf_[0] = 0xAA;
 
-        // Bytes 6-7 store vane positions.
-        send_buf_[7] = (send_buf_[7] & 0xf0) | vane_position_;
+        // Bytes 2-6 store the installer fan speeds
+        send_buf_[2] = fan_speed_[0];
+        send_buf_[3] = fan_speed_[1];
+        send_buf_[4] = fan_speed_[2];
+        send_buf_[5] = fan_speed_[3];
+
+        // Bytes 7-8 store vane positions.
+        send_buf_[7] = (send_buf_[7] & 0xf0) | (vane_position_[0] & 0x0f); // Set vane 1
+        send_buf_[7] = (send_buf_[7] & 0x0f) | ((vane_position_[1] & 0x0f) << 4); // Set vane 2
+        send_buf_[8] = (send_buf_[8] & 0xf0) | (vane_position_[2] & 0x0f); // Set vane 3
+        send_buf_[8] = (send_buf_[8] & 0x0f) | ((vane_position_[3] & 0x0f) << 4); // Set vane 4
+
 
         send_buf_[12] = calc_checksum(send_buf_);
 
@@ -474,6 +705,29 @@ private:
         if (buffer[0] == 0xC9) {
             // Capabilities message. The unit sends this with the other settings so we're now
             // initialized.
+
+            // Check if we need to update the capabilities message.
+            if (nvs_storage_.capabilities_message[0] == 0 || 
+                std::memcmp(nvs_storage_.capabilities_message, buffer, MsgLen - 1) != 0) {
+                
+                bool needsRestart = (nvs_storage_.capabilities_message[0] == 0);
+
+                ESPPreferenceObject pref = global_preferences->make_preference<NVSStorage>(this->get_object_id_hash() ^ NVS_STORAGE_VERSION);
+                memcpy(nvs_storage_.capabilities_message, buffer, MsgLen);
+
+                // If no capabilities were stored in NVS before, restart to make sure we get the correct traits for climate
+                // No restart just on changes (which is unlikely anyway) to make sure we don't end up in a bootloop for faulty devices / communication
+                if (needsRestart) {
+                    pref.save(&nvs_storage_);
+                    global_preferences->sync();
+                    ESP_LOGD(TAG, "restarting to apply initial capabilities");
+                    ESP.restart();
+                }
+                else {
+                    ESP_LOGD(TAG, "updated device capabilities, manual restart required to take effect");
+                }
+            }
+
             is_initializing_ = false;
             return;
         }
@@ -574,6 +828,9 @@ private:
             case 3:
                 this->fan_mode = climate::CLIMATE_FAN_AUTO;
                 break;
+            case 4:
+                this->fan_mode = climate::CLIMATE_FAN_QUIET;
+                break;
             default:
                 ESP_LOGE(TAG, "received unexpected fan mode from AC (%u)", fan_val);
                 *had_error = true;
@@ -610,14 +867,58 @@ private:
             pending_type_a_settings_change_ = true;
         }
 
-        // Handle vane position change.
-        uint8_t vane = buffer[7] & 0xf;
-        if (vane <= 6) {
-            vane_position_ = vane;
-            vane_select_->publish_state(*vane_select_->at(vane));
+        // Handle vane 1 position change
+        uint8_t vane1 = buffer[7] & 0x0F;
+        if (vane1 <= 6) {
+            vane_position_[0] = vane1;
+            vane_select_1_->publish_state(*vane_select_1_->at(vane1));
         } else {
-            ESP_LOGE(TAG, "Unexpected vane position: %u", vane);
+            ESP_LOGE(TAG, "Unexpected vane 1 position: %u", vane1);
         }
+
+        // Handle vane 2 position change
+        uint8_t vane2 = (buffer[7] >> 4) & 0x0F;
+        if (vane2 <= 6) {
+            vane_position_[1] = vane2;
+            vane_select_2_->publish_state(*vane_select_2_->at(vane2));
+        } else {
+            ESP_LOGE(TAG, "Unexpected vane 2 position: %u", vane2);
+        }
+
+        // Handle vane 3 position change
+        uint8_t vane3 = buffer[8] & 0x0F;
+        if (vane3 <= 6) {
+            vane_position_[2] = vane3;
+            vane_select_3_->publish_state(*vane_select_3_->at(vane3));
+        } else {
+            ESP_LOGE(TAG, "Unexpected vane 3 position: %u", vane3);
+        }
+
+        // Handle vane 4 position change
+        uint8_t vane4 = (buffer[8] >> 4) & 0x0F;
+        if (vane4 <= 6) {
+            vane_position_[3] = vane4;
+            vane_select_4_->publish_state(*vane_select_4_->at(vane4));
+        } else {
+            ESP_LOGE(TAG, "Unexpected vane 4 position: %u", vane4);
+        }
+
+        // Handle fan speed 0 (slow) change
+        fan_speed_[0] = buffer[2];
+        fan_speed_slow_->publish_state(fan_speed_[0]);
+        
+        // Handle fan speed 1 (low) change
+        fan_speed_[1] = buffer[3];
+        fan_speed_low_->publish_state(fan_speed_[1]);
+        
+        // Handle fan speed 2 (medium) change
+        fan_speed_[2] = buffer[4];
+        fan_speed_medium_->publish_state(fan_speed_[2]);
+
+        // Handle fan speed 3 (high) change
+        fan_speed_[3] = buffer[5];
+        fan_speed_high_->publish_state(fan_speed_[3]);
+
     }
 
     void process_type_b_settings_message(const uint8_t* buffer) {

@@ -47,8 +47,8 @@ switch:
 
 select:
   - platform: template
-    name: Airflow Up/Down
-    id: vane_position
+    name: Airflow 1 Up/Down
+    id: vane_position_1
     optimistic: true
     icon: mdi:arrow-up-down
     options:
@@ -61,12 +61,117 @@ select:
       - "6 (Down)"
     on_value:
       - lambda: |-
-          ((LgController*)id(${deviceid}))->set_vane_position(i);
+          ((LgController*)id(${deviceid}))->set_vane_position(1, i);
+  - platform: template
+    name: Airflow 2 Up/Down
+    id: vane_position_2
+    optimistic: true
+    icon: mdi:arrow-up-down
+    options:
+      - "0 (Default)"
+      - "1 (Up)"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6 (Down)"
+    on_value:
+      - lambda: |-
+          ((LgController*)id(${deviceid}))->set_vane_position(2, i);
+  - platform: template
+    name: Airflow 3 Up/Down
+    id: vane_position_3
+    optimistic: true
+    icon: mdi:arrow-up-down
+    options:
+      - "0 (Default)"
+      - "1 (Up)"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6 (Down)"
+    on_value:
+      - lambda: |-
+          ((LgController*)id(${deviceid}))->set_vane_position(3, i);
+  - platform: template
+    name: Airflow 4 Up/Down
+    id: vane_position_4
+    optimistic: true
+    icon: mdi:arrow-up-down
+    options:
+      - "0 (Default)"
+      - "1 (Up)"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6 (Down)"
+    on_value:
+      - lambda: |-
+          ((LgController*)id(${deviceid}))->set_vane_position(4, i);
+
+number:
+  - platform: template
+    name: "Fan Speed Slow"
+    id: fan_speed_slow
+    optimistic: true
+    icon: mdi:fan-chevron-down
+    mode: box
+    min_value: 0
+    max_value: 255
+    step: 1
+    on_value:
+      then:
+        - lambda: |-
+            ((LgController*)id(${deviceid}))->set_fan_speed(0, x);    
+  - platform: template
+    name: "Fan Speed Low"
+    id: fan_speed_low
+    optimistic: true
+    icon: mdi:fan-speed-1
+    mode: box
+    min_value: 0
+    max_value: 255
+    step: 1
+    on_value:
+      then:
+        - lambda: |-
+            ((LgController*)id(${deviceid}))->set_fan_speed(1, x);    
+  - platform: template
+    name: "Fan Speed Medium"
+    id: fan_speed_medium
+    optimistic: true
+    icon: mdi:fan-speed-2
+    mode: box
+    min_value: 0
+    max_value: 255
+    step: 1
+    on_value:
+      then:
+        - lambda: |-
+            ((LgController*)id(${deviceid}))->set_fan_speed(2, x);    
+  - platform: template
+    name: "Fan Speed High"
+    id: fan_speed_high
+    optimistic: true
+    icon: mdi:fan-speed-3
+    mode: box
+    min_value: 0
+    max_value: 255
+    step: 1
+    on_value:
+      then:
+        - lambda: |-
+            ((LgController*)id(${deviceid}))->set_fan_speed(3, x);    
 
 climate:
   - platform: custom
     lambda: |-
-      auto* controller = new LgController(id(ac_serial), id(temperature_sensor), id(vane_position));
+      auto* controller = new LgController(id(ac_serial), id(temperature_sensor), 
+                                id(vane_position_1), id(vane_position_2), id(vane_position_3), id(vane_position_4),
+                                id(fan_speed_slow), id(fan_speed_low), id(fan_speed_medium), id(fan_speed_high)
+                              );
       controller->installer_settings().over_heating = ${over_heating_installer_setting};
       App.register_component(controller);
       return {controller};
