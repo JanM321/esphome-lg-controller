@@ -116,7 +116,7 @@ class LgController final : public climate::Climate, public Component {
     bool parse_capability(LgCapability capability) {
         switch (capability) {
             case PURIFIER:
-                return (nvs_storage_.capabilities_message[2] & 0x04) != 0;
+                return (nvs_storage_.capabilities_message[2] & 0x02) != 0;
             case FAN_AUTO:
                 return (nvs_storage_.capabilities_message[3] & 0x1 ) != 0;
             case FAN_SLOW:
@@ -266,7 +266,7 @@ class LgController final : public climate::Climate, public Component {
                 fan_speed_high_->set_internal(true);
             }
 
-            purifier_.set_internal(parse_capability(LgCapability::PURIFIER));        
+            purifier_.set_internal(!parse_capability(LgCapability::PURIFIER));        
         }
     }  
 
