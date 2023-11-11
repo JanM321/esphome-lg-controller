@@ -110,7 +110,8 @@ class LgController final : public climate::Climate, public Component {
     HAS_TWO_VANES,
     HAS_FOUR_VANES,
     VERTICAL_SWING,
-    HORIZONTAL_SWING
+    HORIZONTAL_SWING,
+    HAS_ESP_VALUE_SETTING,
     };
 
     bool parse_capability(LgCapability capability) {
@@ -118,17 +119,17 @@ class LgController final : public climate::Climate, public Component {
             case PURIFIER:
                 return (nvs_storage_.capabilities_message[2] & 0x02) != 0;
             case FAN_AUTO:
-                return (nvs_storage_.capabilities_message[3] & 0x1 ) != 0;
+                return (nvs_storage_.capabilities_message[3] & 0x01) != 0;
             case FAN_SLOW:
                 return (nvs_storage_.capabilities_message[3] & 0x20) != 0;
             case FAN_LOW:
                 return (nvs_storage_.capabilities_message[3] & 0x10) != 0;
             case FAN_LOW_MEDIUM:
-                return (nvs_storage_.capabilities_message[6] & 0x10) != 0;
+                return (nvs_storage_.capabilities_message[6] & 0x08) != 0;
             case FAN_MEDIUM:
                 return (nvs_storage_.capabilities_message[3] & 0x08) != 0;
             case FAN_MEDIUM_HIGH:
-                return (nvs_storage_.capabilities_message[6] & 0x20) != 0;
+                return (nvs_storage_.capabilities_message[6] & 0x10) != 0;
             case FAN_HIGH:
                 return true;
             case MODE_HEATING:
@@ -150,6 +151,8 @@ class LgController final : public climate::Climate, public Component {
                 return (nvs_storage_.capabilities_message[1] & 0x80) != 0;
             case HORIZONTAL_SWING:
                 return (nvs_storage_.capabilities_message[1] & 0x40) != 0;
+            case HAS_ESP_VALUE_SETTING:
+                return (nvs_storage_.capabilities_message[4] & 0x02) != 0;
             default:
                 return false;
         }
@@ -245,25 +248,24 @@ class LgController final : public climate::Climate, public Component {
                 vane_select_4_->set_internal(false);
             }
 
-            if (parse_capability(LgCapability::FAN_SLOW)) {
-                fan_speed_slow_->set_internal(false);
-            } else {
-                fan_speed_slow_->set_internal(true);
-            }
-            if (parse_capability(LgCapability::FAN_LOW)) {
-                fan_speed_low_->set_internal(false);
-            } else {
-                fan_speed_low_->set_internal(true);
-            }
-            if (parse_capability(LgCapability::FAN_MEDIUM)) {
-                fan_speed_medium_->set_internal(false);
-            } else {
-                fan_speed_medium_->set_internal(true);
-            }
-            if (parse_capability(LgCapability::FAN_HIGH)) {
-                fan_speed_high_->set_internal(false);
-            } else {
-                fan_speed_high_->set_internal(true);
+            fan_speed_slow_->set_internal(true);
+            fan_speed_low_->set_internal(true);
+            fan_speed_medium_->set_internal(true);
+            fan_speed_high_->set_internal(true);
+
+            if (parse_capability(LgCapability::HAS_ESP_VALUE_SETTING)) {
+                if (parse_capability(LgCapability::FAN_SLOW)) {
+                    fan_speed_slow_->set_internal(false);
+                }
+                if (parse_capability(LgCapability::FAN_LOW)) {
+                    fan_speed_low_->set_internal(false);
+                }
+                if (parse_capability(LgCapability::FAN_MEDIUM)) {
+                    fan_speed_medium_->set_internal(false);
+                }
+                if (parse_capability(LgCapability::FAN_HIGH)) {
+                    fan_speed_high_->set_internal(false);
+                }
             }
 
             purifier_.set_internal(!parse_capability(LgCapability::PURIFIER));        

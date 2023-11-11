@@ -115,18 +115,18 @@ The AC sends this to the controller when it's powered on to tell it which featur
 |   | 0000_00X0: supports ESP value installer setting |
 |   | 0000_0X00: supports static pressure installer setting |
 |   | 0000_X000: supports ceiling height installer setting |
-|   | 00XX_0000: unknown (might be 4 vanes?)
+|   | 00XX_0000: unknown |
 |   | 0X00_0000: supports robot clean setting |
 |   | X000_0000: supports auto clean setting |
 | 5 | 0000_000X: supports energy saving sub function |
 |   | 0000_00X0: supports override master/slave installer setting |
 |   | 0000_0X00: supports auto change temperature setting |
-|   | 000X_X000: unknown (might be 4 vanes?)
+|   | 000X_X000: unknown |
 |   | 00X0_0000: half degrees C not supported |
 |   | 0X00_0000: has single vane |
 |   | X000_0000: has two vanes |
 | 6 | 0000_000X: supports extra airflow option (presence based?) |
-|   | 0000_0XX0: unknown
+|   | 0000_0XX0: unknown |
 |   | 0000_X000: supports low-medium fan option |
 |   | 000X_0000: supports medium-high fan option |
 |   | 00X0_0000: supports minimum cooling target temperature of 16 instead of 18 |
