@@ -57,7 +57,8 @@ Format:
 |   | 0000_0X00: defrost |
 |   | 0000_X000: preheat |
 |   | 000X_0000: active reservation |
-|   | XXX0_0000: unknown (might be elevation grill state) |
+|   | 0XX0_0000: elevation grill setting (0: default, 1: stop, 2: up, 3: down) |
+|   | X000_0000: unknown |
 | 4 | 000X_0000: plasma sign blinks if plasma on |
 |   | other bits unknown (seems related to linked control) |
 | 5 | 0000_000X: add 0.5 to target temperature in byte 6 |
@@ -95,7 +96,8 @@ The AC sends this to the controller when it's powered on to tell it which featur
 | Byte | Description |
 | --- | --- |
 | 0 | Message type, 0xC9 |
-| 1 | 0000_XXXX: unknown |
+| 1 | 0000_000X: supports elevation grill setting |
+|   | 0000_XXX0: unknown |
 |   | 000X_0000: supports zone state installer setting |
 |   | 00X0_0000: supports swirl |
 |   | XX00_0000: supports horizontal/vertical swing if both are set |
