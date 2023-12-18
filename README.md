@@ -43,6 +43,7 @@ Features currently available in Home Assistant:
 * Switch for external vs internal thermistor.
 * Switch for air purifier (plasma) on/off.
 * Sensors for reporting outdoor unit on/off, defrost, preheat, error code.
+* Sensors for reporting in/mid/out pipe temperatures (if supported by unit).
 * Input fields for installer fan speed setting (to fine-tune fan speeds, 0-255 with 0 being factory default)
 * Detects & exposes only supported capabilities for the connected indoor unit
 * YAML option for installer setting 15 (to change over heating behavior in heating mode).

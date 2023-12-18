@@ -49,6 +49,9 @@ class LgController final : public climate::Climate, public Component {
     esphome::template_::TemplateNumber* fan_speed_high_;
 
     esphome::sensor::Sensor error_code_;
+    esphome::sensor::Sensor pipe_temp_in_;
+    esphome::sensor::Sensor pipe_temp_mid_;
+    esphome::sensor::Sensor pipe_temp_out_;
     esphome::binary_sensor::BinarySensor defrost_;
     esphome::binary_sensor::BinarySensor preheat_;
     esphome::binary_sensor::BinarySensor outdoor_;
@@ -72,6 +75,7 @@ class LgController final : public climate::Climate, public Component {
 
     uint8_t send_buf_[MsgLen] = {};
     uint32_t last_sent_status_millis_ = 0;
+    uint32_t last_sent_recv_type_b_millis_ = 0;
 
     enum class PendingSendKind : uint8_t { None, Status, TypeA, TypeB };
     PendingSendKind pending_send_ = PendingSendKind::None;
@@ -320,6 +324,14 @@ public:
         }
 
         error_code_.set_icon("mdi:alert-circle-outline");
+
+        pipe_temp_in_.set_icon("mdi:thermometer");
+        pipe_temp_in_.set_unit_of_measurement("°C");
+        pipe_temp_mid_.set_icon("mdi:thermometer");
+        pipe_temp_mid_.set_unit_of_measurement("°C");
+        pipe_temp_out_.set_icon("mdi:thermometer");
+        pipe_temp_out_.set_unit_of_measurement("°C");
+
         defrost_.set_icon("mdi:snowflake-melt");
         preheat_.set_icon("mdi:heat-wave");
         outdoor_.set_icon("mdi:fan");
@@ -420,6 +432,9 @@ public:
     std::vector<Sensor*> get_sensors() {
         return {
             &error_code_,
+            &pipe_temp_in_,
+            &pipe_temp_mid_,
+            &pipe_temp_out_,
         };
     }
     std::vector<BinarySensor*> get_binary_sensors() {
@@ -646,16 +661,28 @@ private:
         pending_send_ = PendingSendKind::TypeA;
     }
 
-    void send_type_b_settings_message() {
+    void send_type_b_settings_message(bool timed) {
+        if (timed) {
+            ESP_LOGD(TAG, "sending timed AB message");
+        }
         if (last_recv_type_b_settings_[0] != 0xCB) {
             ESP_LOGE(TAG, "Unexpected missing CB message");
             pending_type_b_settings_change_ = false;
+            // Don't try to send another message immediately after.
+            last_sent_recv_type_b_millis_ = millis();
             return;
         }
 
         // Copy settings from the CB message we received.
         memcpy(send_buf_, last_recv_type_b_settings_, MsgLen);
         send_buf_[0] = 0xAB;
+
+        // Set the high bit of the second byte to request a CB message from the unit.
+        if (timed) {
+            send_buf_[1] |= 0x80;
+        } else {
+            send_buf_[1] &= ~0x80;
+        }
 
         // Byte 2 stores installer setting 15. Set to value from the YAML file.
         send_buf_[2] = (send_buf_[2] & 0xC7) | ((installer_settings_.over_heating & 0xf) << 3);
@@ -667,6 +694,7 @@ private:
 
         pending_type_b_settings_change_ = false;
         pending_send_ = PendingSendKind::TypeB;
+        last_sent_recv_type_b_millis_ = millis();
     }
 
     void process_message(const uint8_t* buffer, bool* had_error) {
@@ -930,6 +958,58 @@ private:
         if (first_time) {
             pending_type_b_settings_change_ = true;
         }
+
+        last_sent_recv_type_b_millis_ = millis();
+
+        // Table mapping a byte value to degrees Celsius based on values displayed by PREMTB100.
+        // INT8_MIN indicates an invalid value.
+        static constexpr int8_t PipeTempTable[] = {
+            /* 0x00 */ INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN,
+                       INT8_MIN, INT8_MIN, INT8_MIN, 108, 104, 101, 100, 98, 95,
+            /* 0x10 */ 93, 91, 89, 87, 85, 84, 82, 81, 79, 78, 76, 75, 74, 73, 72, 71,
+            /* 0x20 */ 70, 68, 68, 67, 66, 65, 64, 63, 62, 61, 60, 60, 59, 58, 57, 57,
+            /* 0x30 */ 56, 55, 55, 54, 53, 53, 52, 52, 51, 50, 50, 49, 49, 48, 47, 47,
+            /* 0x40 */ 46, 46, 45, 45, 44, 44, 43, 43, 42, 42, 41, 41, 40, 40, 39, 39,
+            /* 0x50 */ 39, 38, 38, 37, 37, 36, 36, 36, 35, 35, 34, 34, 33, 33, 33, 32,
+            /* 0x60 */ 32, 31, 31, 31, 30, 30, 30, 29, 29, 29, 28, 28, 27, 27, 27, 26,
+            /* 0x70 */ 26, 26, 25, 25, 24, 24, 24, 23, 23, 23, 22, 22, 22, 21, 21, 21,
+            /* 0x80 */ 20, 20, 20, 19, 19, 19, 18, 18, 18, 17, 17, 17, 16, 16, 16, 15,
+            /* 0x90 */ 15, 15, 14, 14, 14, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10, 10,
+            /* 0xa0 */ 10, 9, 9, 9, 8, 8, 8, 7, 7, 6, 6, 6, 5, 5, 5, 4,
+            /* 0xb0 */ 4, 4, 3, 3, 3, 2, 2, 2, 1, 1, 0, 0, 0, 0, 0, -1,
+            /* 0xc0 */ -1, -2, -2, -2, -3, -3, -4, -4, -5, -5, -5, -6, -6, -7, -7, -8,
+            /* 0xd0 */ -8, -9, -9, -9, -10, -10, -11, -11, -12, -12, -13, -14, -14, -15, -15, -16,
+            /* 0xe0 */ -16, -17, -18, -18, -19, -20, -20, -21, -22, -22, -23, -24, -25, -26, -27,
+                       -28,
+            /* 0xf0 */ -29, INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN,
+                       INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN, INT8_MIN
+        };
+        static_assert(sizeof(PipeTempTable) == 256);
+        static_assert(PipeTempTable[UINT8_MAX] == INT8_MIN);
+
+        int8_t pipe_temp_in = PipeTempTable[buffer[3]];
+        if (pipe_temp_in == INT8_MIN) {
+            pipe_temp_in_.set_internal(true);
+        } else {
+            pipe_temp_in_.set_internal(false);
+            pipe_temp_in_.publish_state(pipe_temp_in);
+        }
+
+        int8_t pipe_temp_out = PipeTempTable[buffer[4]];
+        if (pipe_temp_out == INT8_MIN) {
+            pipe_temp_out_.set_internal(true);
+        } else {
+            pipe_temp_out_.set_internal(false);
+            pipe_temp_out_.publish_state(pipe_temp_out);
+        }
+
+        int8_t pipe_temp_mid = PipeTempTable[buffer[5]];
+        if (pipe_temp_mid == INT8_MIN) {
+            pipe_temp_mid_.set_internal(true);
+        } else {
+            pipe_temp_mid_.set_internal(false);
+            pipe_temp_mid_.publish_state(pipe_temp_mid);
+        }
     }
 
     void update() {
@@ -985,10 +1065,14 @@ private:
         }
 
         // Send a status message every 20 seconds, or now if we have a pending change.
+        // Send an AB message every 10 minutes to request pipe temperature values.
+        uint32_t millis_now = millis();
+        bool send_type_b_timed = (millis_now - last_sent_recv_type_b_millis_) > 10 * 60 * 1000;
         if (!pending_status_change_ &&
             !pending_type_a_settings_change_ &&
             !pending_type_b_settings_change_ &&
-            millis() - last_sent_status_millis_ < 20 * 1000) {
+            !send_type_b_timed &&
+            millis_now - last_sent_status_millis_ < 20 * 1000) {
             return;
         }
 
@@ -1005,7 +1089,6 @@ private:
         // 500 ms might be overkill, but the device usually sends the same message twice with a
         // short delay (about 200 ms?) between them so let's not send there either to avoid
         // collisions.
-        uint32_t millis_now = millis();
         while (true) {
             if (serial_->available() > 0 || digitalRead(RxPin) == LOW) {
                 ESP_LOGD(TAG, "line busy, not sending yet");
@@ -1020,7 +1103,9 @@ private:
         if (pending_type_a_settings_change_) {
             send_type_a_settings_message();
         } else if (pending_type_b_settings_change_) {
-            send_type_b_settings_message();
+            send_type_b_settings_message(/* timed = */ false);
+        } else if (send_type_b_timed) {
+            send_type_b_settings_message(/* timed = */ true);
         } else {
             send_status_message();
         }

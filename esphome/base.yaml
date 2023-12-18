@@ -25,6 +25,9 @@ sensor:
       return ((LgController*)id(${deviceid}))->get_sensors();
     sensors:
       - name: Error Code
+      - name: Pipe Temperature In
+      - name: Pipe Temperature Mid
+      - name: Pipe Temperature Out
   - platform: uptime
     name: Uptime
 
