@@ -186,12 +186,13 @@ Unlike the information there, my unit and controller don't send this regularly b
 | --- | --- |
 | 0 | Message type, 0xAB or 0xCB |
 | 1 | 0000_00XX: DRED, demand response mode (0: off, 1: DRM 1, 2: DRM 2, 3: DRM 3) |
+|   | X000_0000: set to request this message type from the other side (works both ways). For example, if the controller sends `AB 80 ..`, the unit will immediately send `CB 00 ..`. Messages are otherwise the same. |
 | 2 | 0000_00XX: setting zone = 1-3 in settings menu will set these bits to that number. Unclear what this setting is for. |
 |   | 00XX_X000: over heating, installer setting 15 (0: default for unit, 1: +4C/+6C, 2: +2C/+4C, 3: -1C/+1C, 4: -0.5C/+0.5C). Note: the LG controller only shows option 4 in Fahrenheit mode (where it's -1F/+1F) but a custom controller can send it in Celsius mode and it works well with my unit. |
 |   | XX00_0000: over cooling, installer setting 27 (0: +0.5C/-0.5C, 1: +6C/+4C, 2: +4C/+2C, 3: +1C/-1C) |
-| 3 | XXXX_XXXX: Pipe Temperature In (see table below) |
-| 4 | XXXX_XXXX: Pipe Temperature Out (see table below) |
-| 5 | XXXX_XXXX: Pipe Temperature Mid (see table below) |
+| 3 | XXXX_XXXX: pipe temperature in (see table below) |
+| 4 | XXXX_XXXX: pipe temperature out (see table below) |
+| 5 | XXXX_XXXX: pipe temperature mid (see table below) |
 | 6 | 0000_00X0: oil change warning |
 |   | 0000_0X00: centrigrade control, installer setting 17 (0: 1C, 1: 0.5C) |
 |   | 0000_X000: emergency heater, installer setting 18 (0: don't use, 1: use) |
@@ -208,8 +209,9 @@ Unlike the information there, my unit and controller don't send this regularly b
 | 11| 0000_XXXX: emergency heater, installer setting 18, low ambient heating operation (0-15) |
 | 12 | Checksum |
 
+### Pipe Temperature Values
 Bytes 3-5 contain pipe temperature values. A higher value indicates a lower temperature. Below are the byte values mapped to °C (from PREMTB100). For example, a value of 0x78 indicates 23°C. 
-|      | 0x0  | 0x1  | 0x2  | 0x3  | 0x4  | 0x5  | 0x6  | 0x7  | 0x8  | 0x9  | 0xa  | 0xb  | 0xc  | 0xd  | 0xe  | 0xf  |
+|      | 0x0  | 0x1  | 0x2  | 0x3  | 0x4  | 0x5  | 0x6  | 0x7  | 0x8  | 0x9  | 0xA  | 0xB  | 0xC  | 0xD  | 0xE  | 0xF  |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
 | 0x00 | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | 108  | 104  | 101  | 100  | 98   | 95   |
 | 0x10 | 93   | 91   | 89   | 87   | 85   | 84   | 82   | 81   | 79   | 78   | 76   | 75   | 74   | 73   | 72   | 71   |
@@ -221,12 +223,12 @@ Bytes 3-5 contain pipe temperature values. A higher value indicates a lower temp
 | 0x70 | 26   | 26   | 25   | 25   | 24   | 24   | 24   | 23   | 23   | 23   | 22   | 22   | 22   | 21   | 21   | 21   |
 | 0x80 | 20   | 20   | 20   | 19   | 19   | 19   | 18   | 18   | 18   | 17   | 17   | 17   | 16   | 16   | 16   | 15   |
 | 0x90 | 15   | 15   | 14   | 14   | 14   | 13   | 13   | 13   | 12   | 12   | 12   | 11   | 11   | 11   | 10   | 10   |
-| 0xa0 | 10   | 9    | 9    | 9    | 8    | 8    | 8    | 7    | 7    | 6    | 6    | 6    | 5    | 5    | 5    | 4    |
-| 0xb0 | 4    | 4    | 3    | 3    | 3    | 2    | 2    | 2    | 1    | 1    | 0    | 0    | 0    | 0    | 0    | \-1  |
-| 0xc0 | \-1  | \-2  | \-2  | \-2  | \-3  | \-3  | \-4  | \-4  | \-5  | \-5  | \-5  | \-6  | \-6  | \-7  | \-7  | \-8  |
-| 0xd0 | \-8  | \-9  | \-9  | \-9  | \-10 | \-10 | \-11 | \-11 | \-12 | \-12 | \-13 | \-14 | \-14 | \-15 | \-15 | \-16 |
-| 0xe0 | \-16 | \-17 | \-18 | \-18 | \-19 | \-20 | \-20 | \-21 | \-22 | \-22 | \-23 | \-24 | \-25 | \-26 | \-27 | \-28 |
-| 0xf0 | \-29 | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   |
+| 0xA0 | 10   | 9    | 9    | 9    | 8    | 8    | 8    | 7    | 7    | 6    | 6    | 6    | 5    | 5    | 5    | 4    |
+| 0xB0 | 4    | 4    | 3    | 3    | 3    | 2    | 2    | 2    | 1    | 1    | 0    | 0    | 0    | 0    | 0    | \-1  |
+| 0xC0 | \-1  | \-2  | \-2  | \-2  | \-3  | \-3  | \-4  | \-4  | \-5  | \-5  | \-5  | \-6  | \-6  | \-7  | \-7  | \-8  |
+| 0xE0 | \-8  | \-9  | \-9  | \-9  | \-10 | \-10 | \-11 | \-11 | \-12 | \-12 | \-13 | \-14 | \-14 | \-15 | \-15 | \-16 |
+| 0xE0 | \-16 | \-17 | \-18 | \-18 | \-19 | \-20 | \-20 | \-21 | \-22 | \-22 | \-23 | \-24 | \-25 | \-26 | \-27 | \-28 |
+| 0xF0 | \-29 | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   |
 
 ## Type 0xC (0xAC/0xCC)
 The wall controller sends these regularly and apparently some AC units do this too, but I've never seen this from my unit. Maybe this is only used by single-split systems.
