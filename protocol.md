@@ -1,6 +1,6 @@
 # LG Wall Controller Protocol
 
-Some notes and documentation on the protocol used by wired wall controllers. This is largely based on reverse-engineering the LG PREMTB001 controller.
+Some notes and documentation on the protocol used by wired wall controllers. This is largely based on reverse-engineering the LG PREMTB001 and LG PREMTB100 controllers.
 Most of these things haven't been tested with an actual AC unit.
 
 NOTE: as explained in the [README](./README.md), this controller actually supports two different protocols. This only documents the more modern protocol that's used by my own AC.
@@ -15,8 +15,8 @@ The HVAC unit and controller will often send the same message twice (or even fou
 
 ## Collisions
 Collisions on the bus are possible because devices can send at arbitrary times, for example immediately after a setting is changed. My custom controller tries to
-prevent this by ensuring the RX pin is high for at least 500 ms before sending. This works well (I haven't seen any collisions in practice) and the PREMTB001
-controller seems to do something similar.
+prevent this by ensuring the RX pin is high for at least 500 ms before sending. This works well (I haven't seen any collisions in practice) and the LG
+controllers seem to do something similar.
 
 My custom controller also checks that each message we send is transmitted uncorrupted and else it tries to send it again. This works because it's a single wire
 bus, so the controller always receives its own messages too.
@@ -59,8 +59,11 @@ Format:
 |   | 000X_0000: active reservation |
 |   | 0XX0_0000: elevation grill setting (0: default, 1: stop, 2: up, 3: down) |
 |   | X000_0000: unknown |
-| 4 | 000X_0000: plasma sign blinks if plasma on |
-|   | other bits unknown (seems related to linked control) |
+| 4 | 0000_XXXX: unknown (seems related to central control) |
+|   | 000X_0000: plasma sign blinks if plasma on (unclear what this is for) |
+|   | 00X0_0000: auto addressing (shows IDU address on PREMTB100) |
+|   | 0X00_0000: set by unit in heating mode |
+|   | X000_0000: related to central control |
 | 5 | 0000_000X: add 0.5 to target temperature in byte 6 |
 |   | 0000_00X0: energy saving function |
 |   | 0000_0X00: outdoor unit is active |
@@ -77,9 +80,13 @@ Format:
 |   | X000_0000: set temporarily for "release 3 minute delay" installer setting 10 |
 | 9 | used for reservation data and other things (see below) |
 | 10 | 0000_000X: set temporarily for installer setting 1 (test run) |
+|    | 0000_00X0: unknown |
+|    | 0000_0X00: unknown, but always set by PREMTB100 (PREMTB001 sets it too but lets the unit clear it) |
 |    | 0000_X000: active robot clean |
-|    | 000X_0000: active auto clean |
-|    | other bits unknown |
+|    | 000X_0000: active auto clean / auto dry |
+|    | 00X0_0000: unknown |
+|    | 0X00_0000: set by unit when initializing? |
+|    | X000_0000: set by controller when initializing |
 | 11 | error value, 0 = no error |
 | 12 | Checksum |
 
@@ -100,8 +107,8 @@ The AC sends this to the controller when it's powered on to tell it which featur
 |   | 0000_XXX0: unknown |
 |   | 000X_0000: supports zone state installer setting |
 |   | 00X0_0000: supports swirl |
-|   | X000_0000: supports vertical swing |
 |   | 0X00_0000: supports horizontal swing |
+|   | X000_0000: supports vertical swing |
 | 2 | 0000_000X: supports Fan Auto sub function |
 |   | 0000_00X0: supports plasma (air purifier) |
 |   | 0000_0X00: supports humidifier |
@@ -110,7 +117,14 @@ The AC sends this to the controller when it's powered on to tell it which featur
 |   | 00X0_0000: supports operation mode Heating |
 |   | 0X00_0000: supports operation mode Fan |
 |   | X000_0000: supports operation mode Dehumidify |
-| 3 | supported fan options. auto (0x1), power (0x2, available in heating mode: 0x80?), medium (0x8), low (0x10?), slow (0x20), high (always available?) |
+| 3 | 0000_000X: supports fan mode Auto |
+|   | 0000_00X0: supports fan mode Power |
+|   | 0000_0X00: supports fan mode High |
+|   | 0000_X000: supports fan mode Medium |
+|   | 000X_0000: supports fan mode Low |
+|   | 00X0_0000: supports fan mode Slow |
+|   | 0X00_0000: unknown |
+|   | X000_0000: supports fan mode Power in heating mode |
 | 4 | 0000_000X: supports vertical vane control |
 |   | 0000_00X0: supports ESP value installer setting |
 |   | 0000_0X00: supports static pressure installer setting |
@@ -145,7 +159,8 @@ The AC sends this to the controller when it's powered on to tell it which featur
 |   | 0000_0X00: supports over cooling, installer setting 27 |
 |   | 000X_0000: supports energy usage setting |
 |   | X000_0000: supports refrigerant leak detector installation, installer setting 29 |
-| 10 | 0000_00X0: supports static pressure step, installer setting 32 |
+| 10 | 0000_000X: supports DRED (demand response enabling device) |
+|    | 0000_00X0: supports static pressure step, installer setting 32 |
 |    | 0000_0X00: supports indoor unit Wifi AP setting |
 |    | 0X00_0000: supports fan cooling mode thermal off, installer setting 35 |
 |    | X000_0000: supports use primary heater control, installer setting 36 |
@@ -154,7 +169,7 @@ The AC sends this to the controller when it's powered on to tell it which featur
 |    | 0000_0X00: supports himalaya cool sub function |
 |    | 0000_X000: supports monsoon comfort option |
 |    | 000X_0000: supports mosquito away sub function |
-|    | 00X0_0000: supports hum+e sub function |
+|    | 00X0_0000: supports hum+e sub function (called 'comfort cooling' on PREMTB100) |
 |    | 0X00_0000: unknown |
 |    | X000_0000: supports simple dry contact installer setting 41 |
 | 12 | Checksum |
@@ -168,7 +183,7 @@ Type 0xA messages store more advanced settings and are only sent when the AC is 
 | 1 | unit address (see installer setting 2) |
 | 2-6 | fan speeds for slow/low/med/high/power (see installer setting 3) |
 | 7-8 | vertical vane positions from 1 to 6: 0x5555 for 4 vanes set to position 5 | 
-| 9 | 0000_0XXX: auto change temperature setting 1-6 |
+| 9 | 0000_0XXX: auto change temperature setting 1-7 |
 |   | X000_0000: auxiliary heater, installer setting 25 (0: not installed, 1: installed) |
 | 10 | unknown |
 | 11 | 0000_000X: dry contact mode installer setting 9 (1: auto) |
@@ -231,14 +246,15 @@ Bytes 3-5 contain pipe temperature values. A higher value indicates a lower temp
 | 0xF0 | \-29 | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   |
 
 ## Type 0xC (0xAC/0xCC)
-The wall controller sends these regularly and apparently some AC units do this too, but I've never seen this from my unit. Maybe this is only used by single-split systems.
+The wall controller sends these regularly and apparently some AC units do this too, but I've never seen this from my unit.
 Example from my notes, but I haven't checked if this is accurate:
 ```
 CC.00.09.64.91.29...
 byte 2 (0x9): filter time (256 + 2048 = 2304)
 bytes 3-5: energy usage 06:49, 12.9 kWh
 ```
-Byte 12 controls some functions like mosquito away.
+Byte 9 is the room temperature (from controller) or unit temperature (from AC). Stored as `temperature / 2` (example: 0x2B => 21.5C). PREMTB100 sends this, PREMTB001 doesn't. Unclear how this differs from room temperature in A8.
+Byte 11 controls some functions like himalaya cool (0x1), mosquito away (0x2), comfort cooling (0x4).
 
 ## Type 0xD settings (0xAD/0xCD)
 My unit sends this after power on with all zeroes. The wall controller uses it for some installer settings.
@@ -251,7 +267,7 @@ Set 41 (simple dry contact setting) to 3:        ad 00 00 00 00 00 03 00 00 00 0
 ```
 
 ## Type 0xE settings (0xAE/0xCE)
-Also used for installer settings. The format here seems a bit different:
+Also used for installer settings. The format here seems a bit different, with the second byte as additional message type.
 ```
 CE.00... => available settings?
 
@@ -268,6 +284,20 @@ Set it to 2 (cool) with step 4:                      ae 10 00 00 00 00 09 00 00 
 Set 60 (outdoor unit cycle priority) to 1 (special): ae 10 00 00 00 00 20 00 00 00 00 00 ..
 Set 57 (outdoor temp for heating stages) to 1:       ae 10 00 00 00 00 40 00 00 00 00 00 ..
 Set it to 3 with 27.5C:                              ae 10 00 00 00 00 00 00 5b 00 00 00 .. => 0x1b = 27, other bit is for 0.5
+
+Advanced fan speed 'auto':                           ae 10 00 00 04 00.00.00.00.00.00.00 ..
+
+CE.11... => used for air quality monitoring values?
+```
+The `AE 80` / `CE 80` message is a newer, additional status message that the PREMTB100 controller and some units send regularly.
+```
+AE.80.3C.0F.17.00.2A.74.02.00.12.04.13
+- byte 2:      humidity (0x3C => 60%)
+- bytes 3-4:   fan operation time (0x0f17 => 3863 hours)
+- bytes 6-7:   IDU (indoor unit) operation time (0x2a74 => 10868 hours)
+- byte 8:      PREMTB100 always sets bit 2 (unknown)
+- bytes 10-11: room temperature with 0.1 degrees precision (0x12 + 0x04 => 18 + 0.4 => 18.4C)
+- byte 12:     checksum
 ```
 
 ## Other
