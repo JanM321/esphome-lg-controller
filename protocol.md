@@ -1,6 +1,6 @@
 # LG Wall Controller Protocol
 
-Some notes and documentation on the protocol used by wired wall controllers. This is largely based on reverse-engineering the LG PREMTB001 and LG PREMTB100 controllers.
+Documentation for the protocol used by wired wall controllers. This is largely based on reverse-engineering the LG PREMTB001 controller (some information is based on the newer PREMTB100).
 Most of these things haven't been tested with an actual AC unit.
 
 NOTE: as explained in the [README](./README.md), this controller actually supports two different protocols. This only documents the more modern protocol that's used by my own AC.
@@ -253,8 +253,9 @@ CC.00.09.64.91.29...
 byte 2 (0x9): filter time (256 + 2048 = 2304)
 bytes 3-5: energy usage 06:49, 12.9 kWh
 ```
-Byte 9 is the room temperature (from controller) or unit temperature (from AC). Stored as `temperature / 2` (example: 0x2B => 21.5C). PREMTB100 sends this, PREMTB001 doesn't. Unclear how this differs from room temperature in A8.
-Byte 11 controls some functions like himalaya cool (0x1), mosquito away (0x2), comfort cooling (0x4).
+Byte 9 is the room temperature (from controller) or unit temperature (from AC). Stored as `temperature * 2` (example: 0x2B => 21.5C). PREMTB100 sends this but PREMTB001 always sends 0. Unclear how this differs from room temperature in A8.
+
+Byte 11 controls some functions such as himalaya cool (0x1), mosquito away (0x2), and comfort cooling (0x4).
 
 ## Type 0xD settings (0xAD/0xCD)
 My unit sends this after power on with all zeroes. The wall controller uses it for some installer settings.
@@ -267,7 +268,7 @@ Set 41 (simple dry contact setting) to 3:        ad 00 00 00 00 00 03 00 00 00 0
 ```
 
 ## Type 0xE settings (0xAE/0xCE)
-Also used for installer settings. The format here seems a bit different, with the second byte as additional message type.
+Also used for installer settings. The format here is a bit different, with the second byte as additional message type.
 ```
 CE.00... => available settings?
 
@@ -285,9 +286,9 @@ Set 60 (outdoor unit cycle priority) to 1 (special): ae 10 00 00 00 00 20 00 00 
 Set 57 (outdoor temp for heating stages) to 1:       ae 10 00 00 00 00 40 00 00 00 00 00 ..
 Set it to 3 with 27.5C:                              ae 10 00 00 00 00 00 00 5b 00 00 00 .. => 0x1b = 27, other bit is for 0.5
 
-Advanced fan speed 'auto':                           ae 10 00 00 04 00.00.00.00.00.00.00 ..
+Advanced fan speed 'auto':                           ae 10 00 00 04 00 00 00 00 00 00 00 ..
 
-CE.11... => used for air quality monitoring values?
+CE 11... => used for air quality monitoring values?
 ```
 The `AE 80` / `CE 80` message is a newer, additional status message that the PREMTB100 controller and some units send regularly.
 ```
@@ -298,6 +299,14 @@ AE.80.3C.0F.17.00.2A.74.02.00.12.04.13
 - byte 8:      PREMTB100 always sets bit 2 (unknown)
 - bytes 10-11: room temperature with 0.1 degrees precision (0x12 + 0x04 => 18 + 0.4 => 18.4C)
 - byte 12:     checksum
+```
+
+## Type F (0xAF/0xCF)
+Used by newer units and controllers. Contains unit's current power usage among other things. Some examples from PREMTB100:
+```
+CF.00.12.34.56.00.00.00.00.00.00.00.3E => 123.5 kW
+CF.00.98.76.54.00.00.00.00.00.00.00.64 => 987.7 kW
+CF.00.AB.CD.EF.00.00.00.00.00.00.00.63 => 1123.5 kW
 ```
 
 ## Other
