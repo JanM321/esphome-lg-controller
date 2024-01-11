@@ -185,7 +185,8 @@ Type 0xA messages store more advanced settings and are only sent when the AC is 
 | 7-8 | vertical vane positions from 1 to 6: 0x5555 for 4 vanes set to position 5 | 
 | 9 | 0000_0XXX: auto change temperature setting 1-7 |
 |   | X000_0000: auxiliary heater, installer setting 25 (0: not installed, 1: installed) |
-| 10 | unknown |
+| 10 | XXXX_0000: maximum setpoint value, stored as `temperature - 15`. Typically `0xf` => 30°C. |
+|    | 0000_XXXX: minimum setpoint value, stored as `temperature - 15`. Typically `0x1` => 16°C. |
 | 11 | 0000_000X: dry contact mode installer setting 9 (1: auto) |
 |    | 0000_00X0: zone state installer setting 11 (0: variable, 1: fixed) |
 |    | 0000_0X00: robot clean auto |
