@@ -37,58 +37,58 @@ Status messages are used to control all of the basic settings such as operation 
 The controller will send this when a setting changes or else every 20 seconds. For the AC unit this is every 60 seconds.
 
 Format:
-| Byte | Description |
-| --- | --- |
-| 0 | Message type, 0xA8/0xC8/0x28 |
-| 1 | 0000_000X: set when settings were changed |
-|   | 0000_00X0: 1: unit is on, 0: unit is off |
-|   | 000X_XX00: operation mode (0: cooling, 1: dehumidify, 2: fan, 3: auto, 4: heating) |
-|   | XXX0_0000: fan mode (0: low, 1: medium, 2: high, 3: auto, 4: slow, 5: low-medium, 6: medium-high, 7: power)
-| 2 | 0000_000X: if set, controller shows Filter sign |
-|   | 0000_00X0: controller sets this when clearing Filter in settings? |
-|   | 0000_0X00: plasma / air-purifier is on |
-|   | 0000_X000: humidifier |
-|   | 000X_0000: resistive heater |
-|   | 00X0_0000: swirl |
-|   | 0X00_0000: horizontal swing |
-|   | X000_0000: vertical swing |
-| 3 | 0000_000X: external ventilation is on |
-|   | 0000_00X0: Fan Auto function |
-|   | 0000_0X00: defrost |
-|   | 0000_X000: preheat |
-|   | 000X_0000: active reservation |
-|   | 0XX0_0000: elevation grill setting (0: default, 1: stop, 2: up, 3: down) |
-|   | X000_0000: unknown |
-| 4 | 0000_XXXX: unknown (seems related to central control) |
-|   | 000X_0000: plasma sign blinks if plasma on (unclear what this is for) |
-|   | 00X0_0000: auto addressing (shows IDU address on PREMTB100) |
-|   | 0X00_0000: set by unit in heating mode |
-|   | X000_0000: related to central control |
-| 5 | 0000_000X: add 0.5 to target temperature in byte 6 |
-|   | 0000_00X0: energy saving function |
-|   | 0000_0X00: outdoor unit is active |
-|   | 0XXX_X000: unknown (instructables post mentions one bit per zone 1-4) |
-|   | X000_0000: unknown |
-| 6 | 0000_XXXX: `target_temperature - 15` (example: 4 => 19C or 19.5C depending on byte 5) In AI mode: -2 to +2 stored as 0-4 |
-|   | 00XX_0000: thermistor installer setting (0: unit, 1: controller, 2: 2TH) |
-|   | XX00_0000: ceiling height installer setting (0: medium, 1: low, 2: high, 3: very high) |
-| 7 | 00XX_XXXX: `(room_temperature - 10) * 2` (example: 27 => `27 / 2 + 10` => 23.5C) |
-|   | 0X00_0000: set by AC when any indoor unit is in cooling mode |
-|   | X000_0000: set by AC when any indoor unit is in heating mode |
-| 8 | used for reservation data and other things (see below) |
-|   | 0X00_0000: if set, the AC unit will send a batch with all of its settings (other message types below) and clear it. LG controller sets this when powered on. |
-|   | X000_0000: set temporarily for "release 3 minute delay" installer setting 10 |
-| 9 | used for reservation data and other things (see below) |
-| 10 | 0000_000X: set temporarily for installer setting 1 (test run) |
-|    | 0000_00X0: unknown |
-|    | 0000_0X00: unknown, but always set by PREMTB100 (PREMTB001 sets it too but lets the unit clear it) |
-|    | 0000_X000: active robot clean |
-|    | 000X_0000: active auto clean / auto dry |
-|    | 00X0_0000: unknown |
-|    | 0X00_0000: set by unit when initializing? |
-|    | X000_0000: set by controller when initializing |
-| 11 | error value, 0 = no error |
-| 12 | Checksum |
+| Byte | Bits | Description |
+| --- | --- | --- |
+| 0 | `XXXX_XXXX` | Message type, `0xA8/0xC8/0x28` |
+| 1 | `0000_000X` | Set if settings were changed |
+|   | `0000_00X0` | On/off<br>0: unit is off<br>1: unit is on |
+|   | `000X_XX00` | Operation mode<br>0: cooling<br>1: dehumidify<br>2: fan<br>3: auto<br>4: heating |
+|   | `XXX0_0000` | Fan speed<br>0: low<br>1: medium<br>2: high<br>3: auto<br>4: slow<br>5: low-medium<br>6: medium-high<br>7: power
+| 2 | `0000_000X` | If set, controller shows Filter sign |
+|   | `0000_00X0` | Controller sets this when clearing Filter in settings? |
+|   | `0000_0X00` | Plasma / air-purifier |
+|   | `0000_X000` | Humidifier |
+|   | `000X_0000` | Resistive heater |
+|   | `00X0_0000` | Swirl |
+|   | `0X00_0000` | Horizontal swing |
+|   | `X000_0000` | Vertical swing |
+| 3 | `0000_000X` | External ventilation is on |
+|   | `0000_00X0` | Fan Auto function |
+|   | `0000_0X00` | Defrost |
+|   | `0000_X000` | Preheat |
+|   | `000X_0000` | Active reservation |
+|   | `0XX0_0000` | Elevation grill setting<br>0: default<br>1: stop<br>2: up<br>3: down |
+|   | `X000_0000` | Unknown |
+| 4 | `0000_XXXX` | Unknown (seems related to central control) |
+|   | `000X_0000` | Plasma sign blinks if plasma on (unclear what this is for) |
+|   | `00X0_0000` | Auto addressing (shows IDU address on PREMTB100) |
+|   | `0X00_0000` | Set by unit in heating mode |
+|   | `X000_0000` | Related to central control |
+| 5 | `0000_000X` | Add 0.5 to setpoint in byte 6 |
+|   | `0000_00X0` | Energy saving function |
+|   | `0000_0X00` | Outdoor unit is active |
+|   | `0XXX_X000` | Unknown (instructables post mentions one bit per zone 1-4) |
+|   | `X000_0000` | Unknown |
+| 6 | `0000_XXXX` | Setpoint, stored as `temperature - 15` (example: 4 => 19°C or 19.5°C depending on byte 5)<br>In AI mode: -2 to +2 stored as 0-4 |
+|   | `00XX_0000` | Thermistor installer setting<br>0: unit<br>1: controller<br>2: 2TH |
+|   | `XX00_0000` | Ceiling height installer setting<br>0: medium<br>1: low<br>2: high<br>3: very high |
+| 7 | `00XX_XXXX` | Room temperature, stored as `(temperature - 10) * 2` (example: 27 => `27 / 2 + 10` => 23.5°C) |
+|   | `0X00_0000` | Set by AC when any indoor unit is in cooling mode |
+|   | `X000_0000` | Set by AC when any indoor unit is in heating mode |
+| 8 | | Used for reservation data and other things (see below) |
+|   | `0X00_0000` | If set, the AC unit will send a batch with all of its settings (other message types below) and clear it. LG controllers set this when powered on. |
+|   | `X000_0000` | Set temporarily for "release 3 minute delay" installer setting 10 |
+| 9 | | Used for reservation data and other things (see below) |
+| 10 | `0000_000X` | Set temporarily for installer setting 1 (test run) |
+|    | `0000_00X0` | Unknown |
+|    | `0000_0X00` | Unknown, but always set by PREMTB100 (PREMTB001 sets it too but lets the unit clear it) |
+|    | `0000_X000` | Active robot clean |
+|    | `000X_0000` | Active auto clean / auto dry |
+|    | `00X0_0000` | Unknown |
+|    | `0X00_0000` | Set by unit when initializing? |
+|    | `X000_0000` | Set by controller when initializing |
+| 11 | `XXXX_XXXX` | Error value, 0 = no error |
+| 12 | `XXXX_XXXX` | Checksum |
 
 ### Reservation settings
 Timer-related settings use the reservation flag in byte 3 with details in bytes 8 and 9. For example when the controller sets a "simple reservation" to turn on/off after N hours, it stores the number of minutes in byte 9 (and low bit of byte 8 if value > 255):
@@ -100,130 +100,134 @@ The sleep timer option is similar, but sets byte 8 to 0x18/0x19 instead of 0x28/
 
 ## Capabilities message (0xC9)
 The AC sends this to the controller when it's powered on to tell it which features are supported.
-| Byte | Description |
-| --- | --- |
-| 0 | Message type, 0xC9 |
-| 1 | 0000_000X: supports elevation grill setting |
-|   | 0000_XXX0: unknown |
-|   | 000X_0000: supports zone state installer setting |
-|   | 00X0_0000: supports swirl |
-|   | 0X00_0000: supports horizontal swing |
-|   | X000_0000: supports vertical swing |
-| 2 | 0000_000X: supports Fan Auto sub function |
-|   | 0000_00X0: supports plasma (air purifier) |
-|   | 0000_0X00: supports humidifier |
-|   | 0000_X000: supports operation mode Auto |
-|   | 000X_0000: supports operation mode AI |
-|   | 00X0_0000: supports operation mode Heating |
-|   | 0X00_0000: supports operation mode Fan |
-|   | X000_0000: supports operation mode Dehumidify |
-| 3 | 0000_000X: supports fan mode Auto |
-|   | 0000_00X0: supports fan mode Power |
-|   | 0000_0X00: supports fan mode High |
-|   | 0000_X000: supports fan mode Medium |
-|   | 000X_0000: supports fan mode Low |
-|   | 00X0_0000: supports fan mode Slow |
-|   | 0X00_0000: unknown |
-|   | X000_0000: supports fan mode Power in heating mode |
-| 4 | 0000_000X: supports vertical vane control |
-|   | 0000_00X0: supports ESP value installer setting |
-|   | 0000_0X00: supports static pressure installer setting |
-|   | 0000_X000: supports ceiling height installer setting |
-|   | 00XX_0000: unknown |
-|   | 0X00_0000: supports robot clean setting |
-|   | X000_0000: supports auto clean setting |
-| 5 | 0000_000X: supports energy saving sub function |
-|   | 0000_00X0: supports override master/slave installer setting |
-|   | 0000_0X00: supports auto change temperature setting |
-|   | 000X_X000: unknown |
-|   | 00X0_0000: half degrees C not supported |
-|   | 0X00_0000: has single vane |
-|   | X000_0000: has two vanes |
-| 6 | 0000_000X: supports extra airflow option (presence based?) |
-|   | 0000_0XX0: unknown |
-|   | 0000_X000: supports low-medium fan option |
-|   | 000X_0000: supports medium-high fan option |
-|   | 00X0_0000: supports minimum cooling target temperature of 16 instead of 18 |
-|   | XX00_0000: unknown |
-| 7 | 0000_0X00: supports auxiliary heater, installer setting |
-|   | 000X_X000: supports setting for zone = 1 to N (this value) in settings. Unclear what this is for |
-|   | X000_0000: supports over heating, installer setting 15 |
-| 8 | 0000_000X: supports unknown installer setting 16 |
-|   | 0000_00X0: supports centrigrade installer setting (0.5C or 1C) |
-|   | 0000_XX00: unknown |
-|   | 000X_0000: supports emergency heater installer setting |
-|   | 00X0_0000: supports group control installer setting |
-|   | 0X00_0000: supports unit information setting |
-|   | X000_0000: supports clear filter timer in settings |
-| 9 | 0000_00X0: supports indoor unit address check, installer setting 26 |
-|   | 0000_0X00: supports over cooling, installer setting 27 |
-|   | 000X_0000: supports energy usage setting |
-|   | X000_0000: supports refrigerant leak detector installation, installer setting 29 |
-| 10 | 0000_000X: supports DRED (demand response enabling device) |
-|    | 0000_00X0: supports static pressure step, installer setting 32 |
-|    | 0000_0X00: supports indoor unit Wifi AP setting |
-|    | 0X00_0000: supports fan cooling mode thermal off, installer setting 35 |
-|    | X000_0000: supports use primary heater control, installer setting 36 |
-| 11 | 0000_000X: supports indoor unit auto start installer setting |
-|    | 0000_00X0: supports AC fan interlocked with ventilation installer setting |
-|    | 0000_0X00: supports himalaya cool sub function |
-|    | 0000_X000: supports monsoon comfort option |
-|    | 000X_0000: supports mosquito away sub function |
-|    | 00X0_0000: supports hum+e sub function (called 'comfort cooling' on PREMTB100) |
-|    | 0X00_0000: unknown |
-|    | X000_0000: supports simple dry contact installer setting 41 |
-| 12 | Checksum |
+| Byte | Bits | Description |
+| --- | --- | --- |
+| 0 | `XXXX_XXXX` | Message type, `0xC9` |
+| 1 | `0000_000X` | Supports elevation grill setting |
+|   | `0000_XXX0` | Unknown |
+|   | `000X_0000` | Supports zone state installer setting |
+|   | `00X0_0000` | Supports swirl |
+|   | `0X00_0000` | Supports horizontal swing |
+|   | `X000_0000` | Supports vertical swing |
+| 2 | `0000_000X` | Supports Fan Auto sub function |
+|   | `0000_00X0` | Supports plasma (air purifier) |
+|   | `0000_0X00` | Supports humidifier |
+|   | `0000_X000` | Supports operation mode Auto |
+|   | `000X_0000` | Supports operation mode AI |
+|   | `00X0_0000` | Supports operation mode Heating |
+|   | `0X00_0000` | Supports operation mode Fan |
+|   | `X000_0000` | Supports operation mode Dehumidify |
+| 3 | `0000_000X` | Supports fan speed Auto |
+|   | `0000_00X0` | Supports fan speed Power |
+|   | `0000_0X00` | Supports fan speed High |
+|   | `0000_X000` | Supports fan speed Medium |
+|   | `000X_0000` | Supports fan speed Low |
+|   | `00X0_0000` | Supports fan speed Slow |
+|   | `0X00_0000` | Unknown |
+|   | `X000_0000` | Supports fan speed Power in heating mode |
+| 4 | `0000_000X` | Supports vertical vane control |
+|   | `0000_00X0` | Supports ESP value installer setting |
+|   | `0000_0X00` | Supports static pressure installer setting |
+|   | `0000_X000` | Supports ceiling height installer setting |
+|   | `00XX_0000` | Unknown |
+|   | `0X00_0000` | Supports robot clean setting |
+|   | `X000_0000` | Supports auto clean setting |
+| 5 | `0000_000X` | Supports energy saving sub function |
+|   | `0000_00X0` | Supports override master/slave installer setting |
+|   | `0000_0X00` | Supports auto change temperature setting |
+|   | `000X_X000` | Unknown |
+|   | `00X0_0000` | Half degrees C not supported |
+|   | `0X00_0000` | Has single vane |
+|   | `X000_0000` | Has two vanes |
+| 6 | `0000_000X` | Supports extra airflow option (presence based?) |
+|   | `0000_0XX0` | Unknown |
+|   | `0000_X000` | Supports low-medium fan option |
+|   | `000X_0000` | Supports medium-high fan option |
+|   | `00X0_0000` | Supports minimum cooling target temperature of 16 instead of 18 |
+|   | `XX00_0000` | Unknown |
+| 7 | `0000_0X00` | Supports auxiliary heater, installer setting |
+|   | `000X_X000` | Supports setting for zone = 1 to N (this value) in settings. Unclear what this is for |
+|   | `X000_0000` | Supports over heating, installer setting 15 |
+| 8 | `0000_000X` | Supports unknown installer setting 16 |
+|   | `0000_00X0` | Supports centrigrade installer setting (0.5C or 1C) |
+|   | `0000_XX00` | Unknown |
+|   | `000X_0000` | Supports emergency heater installer setting |
+|   | `00X0_0000` | Supports group control installer setting |
+|   | `0X00_0000` | Supports unit information setting |
+|   | `X000_0000` | Supports clear filter timer in settings |
+| 9 | `0000_00X0` | Supports indoor unit address check, installer setting 26 |
+|   | `0000_0X00` | Supports over cooling, installer setting 27 |
+|   | `000X_0000` | Supports energy usage setting |
+|   | `X000_0000` | Supports refrigerant leak detector installation, installer setting 29 |
+| 10 | `0000_000X` | Supports DRED (demand response enabling device) |
+|    | `0000_00X0` | Supports static pressure step, installer setting 32 |
+|    | `0000_0X00` | Supports indoor unit Wifi AP setting |
+|    | `0X00_0000` | Supports fan cooling mode thermal off, installer setting 35 |
+|    | `X000_0000` | Supports use primary heater control, installer setting 36 |
+| 11 | `0000_000X` | Supports indoor unit auto start installer setting |
+|    | `0000_00X0` | Supports AC fan interlocked with ventilation installer setting |
+|    | `0000_0X00` | Supports himalaya cool sub function |
+|    | `0000_X000` | Supports monsoon comfort option |
+|    | `000X_0000` | Supports mosquito away sub function |
+|    | `00X0_0000` | Supports hum+e sub function (called 'comfort cooling' on PREMTB100) |
+|    | `0X00_0000` | Unknown |
+|    | `X000_0000` | Supports simple dry contact installer setting 41 |
+| 12 | `XXXX_XXXX` | Checksum |
 
 ## Advanced settings (0xAA/0xCA)
 Type 0xA messages store more advanced settings and are only sent when the AC is powered on or when changing settings.
 
-| Byte | Description |
-| --- | --- |
-| 0 | Message type, 0xAA or 0xCA |
-| 1 | unit address (see installer setting 2) |
-| 2-6 | fan speeds for slow/low/med/high/power (see installer setting 3) |
-| 7-8 | vertical vane positions from 1 to 6: 0x5555 for 4 vanes set to position 5 | 
-| 9 | 0000_0XXX: auto change temperature setting 1-7 |
-|   | X000_0000: auxiliary heater, installer setting 25 (0: not installed, 1: installed) |
-| 10 | XXXX_0000: maximum setpoint value, stored as `temperature - 15`. Typically `0xf` => 30°C. |
-|    | 0000_XXXX: minimum setpoint value, stored as `temperature - 15`. Typically `0x1` => 16°C. |
-| 11 | 0000_000X: dry contact mode installer setting 9 (1: auto) |
-|    | 0000_00X0: zone state installer setting 11 (0: variable, 1: fixed) |
-|    | 0000_0X00: robot clean auto |
-|    | 0000_X000: auto clean enabled |
-|    | XXXX_0000: unknown |
-| 12 | Checksum |
+| Byte | Bits | Description |
+| --- | --- | --- |
+| 0 | `XXXX_XXXX` | Message type, `0xAA` or `0xCA` |
+| 1 | `XXXX_XXXX` | Unit address (see installer setting 2) |
+| 2 | `XXXX_XXXX` | Fan speed for Slow fan (see installer setting 3)<br>0: default |
+| 3 | `XXXX_XXXX` | Fan speed for Low fan (see installer setting 3)<br>0: default |
+| 4 | `XXXX_XXXX` | Fan speed for Medium fan (see installer setting 3)<br>0: default |
+| 5 | `XXXX_XXXX` | Fan speed for High fan (see installer setting 3)<br>0: default |
+| 6 | `XXXX_XXXX` | Fan speed for Power fan (see installer setting 3)<br>0: default |
+| 7-8 | `0XXX_0XXX` | Vertical vane positions from 0 to 6 (example: `0x5555` for 4 vanes set to position 5)<br>0: default position<br>1: up<br>2-5: ...<br>6: down | 
+| 9 | `0000_0XXX` | Auto change temperature setting 1-7 |
+|   | `X000_0000` | Auxiliary heater, installer setting 25<br>0: not installed<br>1: installed |
+| 10 | `XXXX_0000` | Maximum setpoint value, stored as `temperature - 15`. Typically `0xf` => 30°C. |
+|    | `0000_XXXX` | Minimum setpoint value, stored as `temperature - 15`. Typically `0x1` => 16°C. |
+| 11 | `0000_000X` | Dry contact mode installer setting 9<br>1: auto |
+|    | `0000_00X0` | Zone state installer setting 11<br>0: variable<br>1: fixed |
+|    | `0000_0X00` | Robot clean auto |
+|    | `0000_X000` | Auto clean/dry enabled |
+|    | `XXXX_0000` | Unknown |
+| 12 | `XXXX_XXXX` | Checksum |
 
 ## More settings (0xAB/0xCB)
 0xB stores more information and settings (whether Wifi AP mode is on, installer settings, etc). There's some information in the comments of https://www.instructables.com/Hacking-an-LG-Ducted-Split-for-Home-Automation/
 Unlike the information there, my unit and controller don't send this regularly but only when changing some installer settings or after power on (AC unit).
 
-| Byte | Description |
-| --- | --- |
-| 0 | Message type, 0xAB or 0xCB |
-| 1 | 0000_00XX: DRED, demand response mode (0: off, 1: DRM 1, 2: DRM 2, 3: DRM 3) |
-|   | X000_0000: set to request this message type from the other side (works both ways). For example, if the controller sends `AB 80 ..`, the unit will immediately send `CB 00 ..`. Messages are otherwise the same. |
-| 2 | 0000_00XX: setting zone = 1-3 in settings menu will set these bits to that number. Unclear what this setting is for. |
-|   | 00XX_X000: over heating, installer setting 15 (0: default for unit, 1: +4C/+6C, 2: +2C/+4C, 3: -1C/+1C, 4: -0.5C/+0.5C). Note: the LG controller only shows option 4 in Fahrenheit mode (where it's -1F/+1F) but a custom controller can send it in Celsius mode and it works well with my unit. |
-|   | XX00_0000: over cooling, installer setting 27 (0: +0.5C/-0.5C, 1: +6C/+4C, 2: +4C/+2C, 3: +1C/-1C) |
-| 3 | XXXX_XXXX: pipe temperature in (see table below) |
-| 4 | XXXX_XXXX: pipe temperature out (see table below) |
-| 5 | XXXX_XXXX: pipe temperature mid (see table below) |
-| 6 | 0000_00X0: oil change warning |
-|   | 0000_0X00: centrigrade control, installer setting 17 (0: 1C, 1: 0.5C) |
-|   | 0000_X000: emergency heater, installer setting 18 (0: don't use, 1: use) |
-|   | 0X00_0000: emergency heater, installer setting 18, fan speed (0: fan off, 1: fan on) |
-|   | X000_0000: function setting for group control, installer setting 19 (0: not in use, 1: in use) |
-| 7 | 0X00_0000: indoor unit Wifi Access Point (AP) mode |
-| 8 | 0000_XXXX: model info, outdoor unit (see table in manual) |
-|   | XXXX_0000: model info, indoor unit (see table in manual) |
-| 9 | 0000_XXXX: model info, capacity field (see table in manual) |
-|   | 000X_0000: refrigerant leak detector, installer setting 29 (0: not installed, 1: installed) |
-|   | XX00_0000: fan operation in cooling mode and thermal off conditions, installer setting 35 (0: fan low, 1: fan off, 2: fan setting) |
-| 10| 0000_XXXX: static pressure step, installer setting 32 (0-11) |
-|   | XXXX_0000: number of zones (1-8) according to comment on instructables post |
-| 11| 0000_XXXX: emergency heater, installer setting 18, low ambient heating operation (0-15) |
-| 12 | Checksum |
+| Byte | Bits | Description |
+| --- | --- | --- |
+| 0 | `XXXX_XXXX` | Message type, `0xAB` or `0xCB` |
+| 1 | `0000_00XX` | DRED, demand response mode<br>0: off<br>1: DRM 1<br>2: DRM 2<br>3: DRM 3 |
+|   | `X000_0000` | Set to request this message type from the other side (works both ways). For example, if the controller sends `AB 80 ..`, the unit will immediately send `CB 00 ..`. Messages are otherwise the same. |
+| 2 | `0000_00XX` | Setting zone = 1-3 in settings menu will set these bits to that number. Unclear what this setting is for. |
+|   | `00XX_X000` | Over heating, installer setting 15<br>0: default for unit<br>1: +4°C / +6°C<br>2: +2°C / +4°C<br>3: -1°C / +1°C<br>4: -0.5°C / +0.5°C<br>Note: the LG controllers only show option 4 in Fahrenheit mode (where it's -1F/+1F) and some only in dual setpoint mode, but a custom controller can send it in Celsius mode too. |
+|   | `XX00_0000` | Over cooling, installer setting 27<br>0: +0.5°C / -0.5°C<br>1: +6°C / +4°C<br>2: +4°C / +2°C<br>3: +1°C / -1°C |
+| 3 | `XXXX_XXXX` | Pipe temperature In (see table below) |
+| 4 | `XXXX_XXXX` | Pipe temperature Out (see table below) |
+| 5 | `XXXX_XXXX` | Pipe temperature Mid (see table below) |
+| 6 | `0000_00X0` | Oil change warning |
+|   | `0000_0X00` | Centrigrade control, installer setting 17<br>0: 1°C<br>1: 0.5°C) |
+|   | `0000_X000` | Emergency heater, installer setting 18<br>0: don't use<br>1: use |
+|   | `0X00_0000` | Emergency heater, installer setting 18, fan speed<br>0: fan off<br>1: fan on |
+|   | `X000_0000` | Function setting for group control, installer setting 19<br>0: not in use<br>1: in use |
+| 7 | `0X00_0000` | Indoor unit Wifi Access Point (AP) mode |
+| 8 | `0000_XXXX` | Model info, outdoor unit (see table in PREMTB001 manual) |
+|   | `XXXX_0000` | Model info, indoor unit (see table in PREMTB001 manual) |
+| 9 | `0000_XXXX` | Model info, capacity field (see table in PREMTB001 manual) |
+|   | `000X_0000` | Refrigerant leak detector, installer setting 29<br>0: not installed<br>1: installed |
+|   | `XX00_0000` | Fan operation in cooling mode and thermal off conditions, installer setting 35<br>0: fan low<br>1: fan off<br>2: fan setting |
+| 10| `0000_XXXX` | Static pressure step, installer setting 32 (0-11) |
+|   | `XXXX_0000` | Number of zones (1-8) according to comment on instructables post |
+| 11| `0000_XXXX` | Emergency heater, installer setting 18, low ambient heating operation (0-15) |
+| 12 | `XXXX_XXXX` | Checksum |
 
 ### Pipe Temperature Values
 Bytes 3-5 contain pipe temperature values. A higher value indicates a lower temperature. Below are the byte values mapped to °C (from PREMTB100). For example, a value of 0x78 indicates 23°C. 
