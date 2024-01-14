@@ -67,8 +67,11 @@ Format:
 | 5 | `0000_000X` | Add 0.5 to setpoint in byte 6 |
 |   | `0000_00X0` | Energy saving function |
 |   | `0000_0X00` | Outdoor unit is active |
-|   | `0XXX_X000` | Unknown (instructables post mentions one bit per zone 1-4) |
-|   | `X000_0000` | Unknown |
+|   | `0000_X000` | Zone 4 on |
+|   | `000X_0000` | Zone 3 on |
+|   | `00X0_0000` | Zone 2 on |
+|   | `0X00_0000` | Zone 1 on |
+|   | `X000_0000` | Set if installer setting Zone Type is set to New |
 | 6 | `0000_XXXX` | Setpoint, stored as `temperature - 15` (example: 4 => 19°C or 19.5°C depending on byte 5)<br>In AI mode: -2 to +2 stored as 0-4 |
 |   | `00XX_0000` | Thermistor installer setting<br>0: unit<br>1: controller<br>2: 2TH |
 |   | `XX00_0000` | Ceiling height installer setting<br>0: medium<br>1: low<br>2: high<br>3: very high |
@@ -80,10 +83,13 @@ Format:
 |   | `X000_0000` | Set temporarily for "release 3 minute delay" installer setting 10 |
 | 9 | | Used for reservation data and other things (see below) |
 | 10 | `0000_000X` | Set temporarily for installer setting 1 (test run) |
-|    | `0000_00X0` | Unknown |
+|    | `0000_00X0` | Zone 8 on |
 |    | `0000_0X00` | Unknown, but always set by PREMTB100 (PREMTB001 sets it too but lets the unit clear it) |
+|    |             | Or for duct units with > 4 zones: zone 7 on |
 |    | `0000_X000` | Active robot clean |
+|    |             | Or for duct units with > 4 zones: zone 6 on |
 |    | `000X_0000` | Active auto clean / auto dry |
+|    |             | Or for duct units with > 4 zones: zone 5 on |
 |    | `00X0_0000` | Unknown |
 |    | `0X00_0000` | Set by unit when initializing? |
 |    | `X000_0000` | Set by controller when initializing |
@@ -103,8 +109,8 @@ The AC sends this to the controller when it's powered on to tell it which featur
 | Byte | Bits | Description |
 | --- | --- | --- |
 | 0 | `XXXX_XXXX` | Message type, `0xC9` |
-| 1 | `0000_000X` | Supports elevation grill setting |
-|   | `0000_XXX0` | Unknown |
+| 1 | `0000_0XXX` | Kind of unit?<br>1: cassette<br>2: duct (enables zone settings)<br>4: wall unit<br>(other values unknown) |
+|   | `0000_X000` | Unknown |
 |   | `000X_0000` | Supports zone state installer setting |
 |   | `00X0_0000` | Supports swirl |
 |   | `0X00_0000` | Supports horizontal swing |
@@ -148,9 +154,10 @@ The AC sends this to the controller when it's powered on to tell it which featur
 | 7 | `0000_0X00` | Supports auxiliary heater, installer setting |
 |   | `000X_X000` | Supports setting for zone = 1 to N (this value) in settings. Unclear what this is for |
 |   | `X000_0000` | Supports over heating, installer setting 15 |
-| 8 | `0000_000X` | Supports unknown installer setting 16 |
+| 8 | `0000_000X` | Supports pipe temperature setting (installer setting 16 on PREMTB001) |
 |   | `0000_00X0` | Supports centrigrade installer setting (0.5C or 1C) |
-|   | `0000_XX00` | Unknown |
+|   | `0000_0X00` | Unknown |
+|   | `0000_X000` | Supports 5-8 zones |
 |   | `000X_0000` | Supports emergency heater installer setting |
 |   | `00X0_0000` | Supports group control installer setting |
 |   | `0X00_0000` | Supports unit information setting |
@@ -214,7 +221,7 @@ Unlike the information there, my unit and controller don't send this regularly b
 | 4 | `XXXX_XXXX` | Pipe temperature Out (see table below) |
 | 5 | `XXXX_XXXX` | Pipe temperature Mid (see table below) |
 | 6 | `0000_00X0` | Oil change warning |
-|   | `0000_0X00` | Centrigrade control, installer setting 17<br>0: 1°C<br>1: 0.5°C) |
+|   | `0000_0X00` | Centrigrade control, installer setting 17<br>0: 1°C<br>1: 0.5°C |
 |   | `0000_X000` | Emergency heater, installer setting 18<br>0: don't use<br>1: use |
 |   | `0X00_0000` | Emergency heater, installer setting 18, fan speed<br>0: fan off<br>1: fan on |
 |   | `X000_0000` | Function setting for group control, installer setting 19<br>0: not in use<br>1: in use |
@@ -225,7 +232,7 @@ Unlike the information there, my unit and controller don't send this regularly b
 |   | `000X_0000` | Refrigerant leak detector, installer setting 29<br>0: not installed<br>1: installed |
 |   | `XX00_0000` | Fan operation in cooling mode and thermal off conditions, installer setting 35<br>0: fan low<br>1: fan off<br>2: fan setting |
 | 10| `0000_XXXX` | Static pressure step, installer setting 32 (0-11) |
-|   | `XXXX_0000` | Number of zones (1-8) according to comment on instructables post |
+|   | `XXXX_0000` | Number of zones configured for duct units (Zone Number installer setting) |
 | 11| `0000_XXXX` | Emergency heater, installer setting 18, low ambient heating operation (0-15) |
 | 12 | `XXXX_XXXX` | Checksum |
 
