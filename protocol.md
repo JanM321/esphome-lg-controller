@@ -78,10 +78,11 @@ Format:
 | 7 | `00XX_XXXX` | Room temperature, stored as `(temperature - 10) * 2` (example: 27 => `27 / 2 + 10` => 23.5°C) |
 |   | `0X00_0000` | Set by AC when any indoor unit is in cooling mode |
 |   | `X000_0000` | Set by AC when any indoor unit is in heating mode |
-| 8 | | Used for reservation data and other things (see below) |
+| 8 | `0000_0XXX` | Reservation/timer number of minutes, upper bits (see next section) |
+|   | `00XX_X000` | Reservation/timer type (see next section)<br>0: none<br>1: turn-on reservation<br>2: turn-off reservation<br>3: sleep timer<br>4: clear all reservation data<br>5: simple timer (on/off after N minutes)<br>6-7: unknown |
 |   | `0X00_0000` | If set, the AC unit will send a batch with all of its settings (other message types below) and clear it. LG controllers set this when powered on. |
 |   | `X000_0000` | Set temporarily for "release 3 minute delay" installer setting 10 |
-| 9 | | Used for reservation data and other things (see below) |
+| 9 | `XXXX_XXXX` | Reservation/timer number of minutes, lower bits (see next section) |
 | 10 | `0000_000X` | Set temporarily for installer setting 1 (test run) |
 |    | `0000_00X0` | Zone 8 on |
 |    | `0000_0X00` | Unknown, but always set by PREMTB100 (PREMTB001 sets it too but lets the unit clear it) |
@@ -92,17 +93,22 @@ Format:
 |    |             | Or for duct units with > 4 zones: zone 5 on |
 |    | `00X0_0000` | Unknown |
 |    | `0X00_0000` | Set by unit when initializing? |
-|    | `X000_0000` | Set by controller when initializing |
+|    | `X000_0000` | Set by controller when initializing, or for reservation settings (see next section) |
 | 11 | `XXXX_XXXX` | Error value, 0 = no error |
 | 12 | `XXXX_XXXX` | Checksum |
 
 ### Reservation settings
-Timer-related settings use the reservation flag in byte 3 with details in bytes 8 and 9. For example when the controller sets a "simple reservation" to turn on/off after N hours, it stores the number of minutes in byte 9 (and low bit of byte 8 if value > 255):
+Timer-related settings use the reservation flag in byte 3 with type + number of minutes stored in bytes 8 and 9.
+
+For example when the controller sets a "simple reservation" to turn on/off after N hours, it stores the reservation type in byte 8 and the number of minutes in byte 9 + the three low bits of byte 8 if value > 255:
 ```
 1 hour : a8 43 00 10 00 00 03 1d 28 3c 00 00 => 0x3c => 60 minutes
 7 hours: a8 43 00 10 00 00 03 1d 29 a4 00 00 => 0x100 + 0xa4 => 420 minutes
+                  ^              ^^ ^^
 ```
-The sleep timer option is similar, but sets byte 8 to 0x18/0x19 instead of 0x28/0x29.
+The sleep timer option is very similar, it just uses a different reservation type in byte 8. The turn-off/turn-on reservations are set based on the target time, but the controller converts this to number of minutes based on the current time.
+
+Because multiple reservation types can be active at the same time, the controller also has a way to clear individual ones: byte 10 is set to `0x80` and then byte 9 has a single bit for each of the following if they're enabled: turn-off reservation (`0x4`), turn-on reservation (`0x8`), sleep timer (`0x10`), and simple timer (`0x20`).
 
 ## Capabilities message (0xC9)
 The AC sends this to the controller when it's powered on to tell it which features are supported.
