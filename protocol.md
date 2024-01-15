@@ -106,9 +106,11 @@ For example when the controller sets a "simple reservation" to turn on/off after
 7 hours: a8 43 00 10 00 00 03 1d 29 a4 00 00 => 0x100 + 0xa4 => 420 minutes
                   ^              ^^ ^^
 ```
-The sleep timer option is very similar, it just uses a different reservation type in byte 8. The turn-off/turn-on reservations are set based on the target time, but the controller converts this to number of minutes based on the current time.
+The sleep timer option is very similar, it just uses a different reservation type in byte 8. The turn-off/turn-on reservations are set based on the target time, but the controller always converts this to number of minutes relative to the current time.
 
-Because multiple reservation types can be active at the same time, the controller also has a way to clear individual ones: byte 10 is set to `0x80` and then byte 9 has a single bit for each of the following if they're enabled: turn-off reservation (`0x4`), turn-on reservation (`0x8`), sleep timer (`0x10`), and simple timer (`0x20`).
+To disable a single reservation or timer, the number of minutes can be set to 0. Reservation type 4 will clear all reservations.
+
+Because multiple reservation types can be active at the same time, the controller also has a way to disable individual ones: byte 10 has bit `0x80` set and then byte 9 has a single bit for each of the following if they're enabled: turn-off reservation (`0x4`), turn-on reservation (`0x8`), sleep timer (`0x10`), and simple timer (`0x20`). My AC unit doesn't send messages like this, it just uses the reservation type with number of minutes > 0 to enable a reservation or timer, and 0 minutes to disable it.
 
 ## Capabilities message (0xC9)
 The AC sends this to the controller when it's powered on to tell it which features are supported.
