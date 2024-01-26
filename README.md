@@ -11,18 +11,23 @@ This has some advantages compared to the [LG ThinQ integration](https://github.c
 <img src="images/controller2.jpg" width="400px" alt="PCB in enclosure"><img src="images/controller3.png" width="320px" alt="Screenshot of Home Assistant dashboard">
 
 # Protocol and Compatibility
-There seem to be two different protocols that LG AC units and wall controllers use to communicate: 
-1. **6-byte protocol**: the controller sends a 6-byte message every four seconds or so and the AC unit responds with a 6-byte message. This is the more basic protocol and likely older because it doesn't support advanced features and settings. An ESPHome implementation of this is available here: https://github.com/Flameeyes/esphome-lg-pqrcuds0
-2. **13-byte [protocol](protocol.md)**: the controller sends a 13-byte status message every 20 seconds (or when there's a change in settings) and the AC unit sends a very similar status message every 60 seconds. There are also other message types for more advanced settings. **This is the one implemented here.**
-
-The controller hardware is identical because both use a very slow serial connection (104 bps) over a three-wire cable (Red = 12V, Yellow = Signal, Black = GND). In fact, some LG controllers support both protocols: my LG PREMTB001 controller first tries the 13-byte protocol and if it doesn't receive a response it will switch to the 6-byte protocol.
-
+### Supported AC units
 This ESPHome controller has been used with the following units:
 * LG PC12SQ (Standard Plus), AP09RT units connected to a multi-split outdoor unit (heat pump, MU2R17 Multi F).
 * LG AS-W123MMM9 single wall mounted unit from 2013, heat pump, replaces PREMTB10U controller ([source](https://github.com/JanM321/esphome-lg-controller/issues/1#issuecomment-1631718974)).
 * LG Artcool Gallery and 4 Way Cassette connected to LG MU3R19 Multi F ([source](https://github.com/JanM321/esphome-lg-controller/issues/11)).
 * LG S12ET indoor unit ([source](https://github.com/JanM321/esphome-lg-controller/issues/3#issuecomment-1761040745)).
 * LG ARNU18GSCR4 and LG ARNU36GSVA4 Multi V indoor units ([source](https://github.com/JanM321/esphome-lg-controller/issues/8#issuecomment-1817444454)).
+* LG TC07GQR and LG PC12SQ units ([source](https://github.com/JanM321/esphome-lg-controller/issues/25#issuecomment-1911668782)).
+
+If your indoor unit supports the LG PREMTB100 and/or LG PREMTA200 controller, it will very likely be compatible. Please let us know if it works so we can add it to this list :)
+
+### Longer answer
+There seem to be two different protocols that LG AC units and wall controllers use to communicate: 
+1. **6-byte protocol**: the controller sends a 6-byte message every four seconds or so and the AC unit responds with a 6-byte message. This is the more basic protocol and likely older because it doesn't support advanced features and settings. An ESPHome implementation of this is available here: https://github.com/Flameeyes/esphome-lg-pqrcuds0
+2. **13-byte [protocol](protocol.md)**: the controller sends a 13-byte status message every 20 seconds (or when there's a change in settings) and the AC unit sends a very similar status message every 60 seconds. There are also other message types for more advanced settings. **This is the one implemented here.**
+
+The controller hardware is identical because both use a very slow serial connection (104 bps) over a three-wire cable (Red = 12V, Yellow = Signal, Black = GND). In fact, some LG controllers support both protocols: my LG PREMTB001 controller first tries the 13-byte protocol and if it doesn't receive a response it will switch to the 6-byte protocol. My LG PREMTB100 (newer controller) only supports the 13-byte protocol as far as I can tell.
 
 Wired controllers must be connected to the CN-REMO socket on the indoor unit's PCB (green 3 pin JST-XH connector). Fortunately my wall units came with a short extension cable already plugged into that port so I only had to open up the bottom part of the unit to connect my controller.
 
@@ -49,6 +54,8 @@ Features currently available in Home Assistant:
 * YAML option for installer setting 15 (to change over heating behavior in heating mode).
 
 The LG ThinQ app and wireless remote can still be used to change these settings and other settings. They'll be synchronized with this controller.
+
+Unfortunately not all settings are exposed to the wired controller, but if you're interested in a feature and it's supported by the PREMTB100 or PREMTA200 controller, please open an issue and we can consider adding it.
 
 # Hardware
 
