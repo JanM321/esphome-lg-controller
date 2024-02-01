@@ -33,7 +33,7 @@ Wired controllers must be connected to the CN-REMO socket on the indoor unit's P
 
 This controller is written to be the main/only wired controller connected to the AC. LG calls this the "master" controller. I haven't tested connecting a second controller in slave mode.
 
-Wired controllers using the new protocol only send and receive settings and current temperature. The HVAC unit itself decides when to start/stop active cooling/heating etc based on this. It's possible to use a Home Assistant template sensor as temperature sensor to influence this behavior.
+Wired controllers using the new protocol only send and receive settings and current temperature. The HVAC unit itself decides when to start/stop active cooling/heating etc based on this. It's possible to use a Home Assistant template sensor as temperature sensor to influence this behavior (see below).
 
 See [protocol.md](protocol.md) for information about the protocol based on reverse engineering the PREMTB001 and PREMTB100 controllers.
 
@@ -91,6 +91,9 @@ There are multiple ways to build the firmware, flash it on the device, and add t
 7. The device can now be added in Home Assistant (Settings => Devices & Services). HA will ask you for the encryption key from the YAML file.
  
 If you just want to connect to the device to view the debug logs, use `esphome logs lg-livingroom.yaml`.
+
+# Tips
+It's possible to use a Home Assistant template sensor as room temperature sensor. I'm [using this](https://gist.github.com/JanM321/b550285713f20231386509b2c227f0b8) to work around some issues with my LG Multi F unit in heating mode.
 
 # License
 This project is licensed under the 0BSD License. See the LICENSE file for details.
