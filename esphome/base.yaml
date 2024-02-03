@@ -167,13 +167,28 @@ number:
       then:
         - lambda: |-
             ((LgController*)id(${deviceid}))->set_fan_speed(3, x);    
+  - platform: template
+    name: "Sleep Timer (minutes)"
+    id: sleep_timer
+    optimistic: true
+    icon: mdi:timer-outline
+    mode: box
+    min_value: 0
+    max_value: 420
+    initial_value: 0
+    step: 1
+    on_value:
+      then:
+        - lambda: |-
+            ((LgController*)id(${deviceid}))->set_sleep_timer(x);
 
 climate:
   - platform: custom
     lambda: |-
       auto* controller = new LgController(id(ac_serial), id(temperature_sensor), 
                                 id(vane_position_1), id(vane_position_2), id(vane_position_3), id(vane_position_4),
-                                id(fan_speed_slow), id(fan_speed_low), id(fan_speed_medium), id(fan_speed_high)
+                                id(fan_speed_slow), id(fan_speed_low), id(fan_speed_medium), id(fan_speed_high),
+                                id(sleep_timer)
                               );
       controller->installer_settings().over_heating = ${over_heating_installer_setting};
       App.register_component(controller);

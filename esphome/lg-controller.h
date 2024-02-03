@@ -48,6 +48,8 @@ class LgController final : public climate::Climate, public Component {
     esphome::template_::TemplateNumber* fan_speed_medium_;
     esphome::template_::TemplateNumber* fan_speed_high_;
 
+    esphome::template_::TemplateNumber* sleep_timer_;
+
     esphome::sensor::Sensor error_code_;
     esphome::sensor::Sensor pipe_temp_in_;
     esphome::sensor::Sensor pipe_temp_mid_;
@@ -90,6 +92,9 @@ class LgController final : public climate::Climate, public Component {
     uint8_t vane_position_[4] = {0,0,0,0};
     uint8_t fan_speed_[4] = {0,0,0,0};
 
+    optional<uint32_t> sleep_timer_target_millis_{};
+    bool active_reservation_ = false;
+    bool ignore_sleep_timer_callback_ = false;
 
     uint32_t NVS_STORAGE_VERSION = 2843654U; // Change version if the NVSStorage struct changes
     struct NVSStorage {
@@ -286,7 +291,8 @@ public:
                  esphome::template_::TemplateNumber* fan_speed_slow,
                  esphome::template_::TemplateNumber* fan_speed_low,
                  esphome::template_::TemplateNumber* fan_speed_medium,
-                 esphome::template_::TemplateNumber* fan_speed_high
+                 esphome::template_::TemplateNumber* fan_speed_high,
+                 esphome::template_::TemplateNumber* sleep_timer
                  )
       : serial_(serial),
         temperature_sensor_(temperature_sensor),
@@ -298,6 +304,7 @@ public:
         fan_speed_low_(fan_speed_low),
         fan_speed_medium_(fan_speed_medium),
         fan_speed_high_(fan_speed_high),
+        sleep_timer_(sleep_timer),
         purifier_(this),
         internal_thermistor_(this)
     {
@@ -424,6 +431,19 @@ public:
         }
     }
 
+    void set_sleep_timer(int minutes) {
+        if (ignore_sleep_timer_callback_) {
+            return;
+        }
+        // 0 clears the timer. Accept max 7 hours.
+        if (minutes < 0 || minutes > 7 * 60) {
+            ESP_LOGE(TAG, "Ignoring invalid sleep timer value: %d minutes", minutes);
+            return;
+        }
+        set_sleep_timer_internal(uint32_t(minutes));
+        set_changed();
+    }
+
     InstallerSettings& installer_settings() {
         return installer_settings_;
     }
@@ -467,6 +487,18 @@ private:
         return round(temp * 2) / 2;
     }
 
+    optional<uint32_t> get_sleep_timer_minutes() const {
+        if (!sleep_timer_target_millis_.has_value()) {
+            return {};
+        }
+        int32_t diff = int32_t(sleep_timer_target_millis_.value() - millis());
+        if (diff <= 0) {
+            return {};
+        }
+        uint32_t minutes = uint32_t(diff) / 1000 / 60 + 1;
+        return minutes;
+    }
+
     static uint8_t calc_checksum(const uint8_t* buffer) {
         size_t result = 0;
         for (size_t i = 0; i < 12; i++) {
@@ -483,6 +515,17 @@ private:
             }
         }
         this->swing_mode = mode;
+    }
+
+    void set_sleep_timer_internal(uint32_t minutes) {
+        ESP_LOGD(TAG, "Setting sleep timer: %u minutes", minutes);
+        if (minutes > 0) {
+            sleep_timer_target_millis_ = millis() + minutes * 60 * 1000;
+            active_reservation_ = true;
+        } else {
+            sleep_timer_target_millis_.reset();
+            active_reservation_ = false;
+        }
     }
 
     void send_status_message() {
@@ -511,7 +554,8 @@ private:
                 b |= (4 << 2) | 0x2;
                 break;
             case climate::CLIMATE_MODE_OFF:
-                b |= (2 << 2);
+                // Don't set power-on flag, but preserve previous operation mode.
+                b |= (last_recv_status_[1] & 0x1C);
                 break;
             default:
                 ESP_LOGE(TAG, "unknown operation mode, turning off");
@@ -564,8 +608,15 @@ private:
         }
         send_buf_[2] = b;
 
-        // Bytes 3-4.
+        // Byte 3.
         send_buf_[3] = last_recv_status_[3];
+        if (active_reservation_) {
+            send_buf_[3] |= 0x10;
+        } else {
+            send_buf_[3] &= ~0x10;
+        }
+    
+        // Byte 4.
         send_buf_[4] = last_recv_status_[4];
 
         float target = this->target_temperature;
@@ -599,15 +650,24 @@ private:
         send_buf_[6] = (thermistor << 4) | ((uint8_t(target) - 15) & 0xf);
         send_buf_[7] = (last_recv_status_[7] & 0xC0) | uint8_t((temp - 10) * 2);
 
-        // Byte 8. Request settings when controller turns on.
+        // Bytes 8-9. Initialize to 0 to not echo back timer settings set by the AC.
+        send_buf_[8] = 0;
+        send_buf_[9] = 0;
+
         if (is_initializing_) {
-            send_buf_[8] = 0x40;
-        } else {
-            send_buf_[8] = last_recv_status_[8];
+            // Request settings when controller turns on.
+            send_buf_[8] |= 0x40;
+        } else if (optional<uint32_t> minutes = get_sleep_timer_minutes()) {
+            // Set sleep timer.
+            // Byte 8 stores the kind (0x38) and high bits of number of minutes (0x7).
+            // Byte 9 stores the low bits of the number of minutes.
+            constexpr uint8_t timer_kind_sleep = 3;
+            send_buf_[8] = timer_kind_sleep << 3;
+            send_buf_[8] |= (*minutes >> 8) & 0b111;
+            send_buf_[9] = *minutes & 0xff;
         }
 
-        // Bytes 9-11.
-        send_buf_[9] = last_recv_status_[9];
+        // Bytes 10-11.
         send_buf_[10] = last_recv_status_[10];
         send_buf_[11] = last_recv_status_[11];
 
@@ -886,6 +946,16 @@ private:
             this->target_temperature += 0.5;
         }
 
+        active_reservation_ = buffer[3] & 0x10;
+
+        // Set or clear sleep timer.
+        if (sleep_timer_target_millis_.has_value() && !active_reservation_) {
+            sleep_timer_->publish_state(0);
+        } else if (((buffer[8] >> 3) & 0x7) == 3) {
+            uint32_t minutes = (uint32_t(buffer[8] & 0x7) << 8) | buffer[9];
+            sleep_timer_->publish_state(minutes);
+        }
+
         publish_state();
     }
 
@@ -1064,9 +1134,31 @@ private:
             return;
         }
 
+        uint32_t millis_now = millis();
+
+        // Handle sleep timer.
+        if (sleep_timer_target_millis_.has_value()) {
+            int32_t diff = int32_t(sleep_timer_target_millis_.value() - millis_now);
+            if (diff <= 0) {
+                ESP_LOGD(TAG, "Turning off for sleep timer");
+                sleep_timer_target_millis_.reset();
+                active_reservation_= false;
+                ignore_sleep_timer_callback_ = true;
+                sleep_timer_->publish_state(0);
+                ignore_sleep_timer_callback_ = false;
+                this->mode = climate::CLIMATE_MODE_OFF;
+                set_changed();
+            } else if (optional<uint32_t> minutes = get_sleep_timer_minutes()) {
+                if (sleep_timer_->state != *minutes) {
+                    ignore_sleep_timer_callback_ = true;
+                    sleep_timer_->publish_state(*minutes);
+                    ignore_sleep_timer_callback_ = false;
+                }
+            }
+        }
+
         // Send a status message every 20 seconds, or now if we have a pending change.
         // Send an AB message every 10 minutes to request pipe temperature values.
-        uint32_t millis_now = millis();
         bool send_type_b_timed = (millis_now - last_sent_recv_type_b_millis_) > 10 * 60 * 1000;
         if (!pending_status_change_ &&
             !pending_type_a_settings_change_ &&

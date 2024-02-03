@@ -49,8 +49,9 @@ Features currently available in Home Assistant:
 * Switch for air purifier (plasma) on/off.
 * Sensors for reporting outdoor unit on/off, defrost, preheat, error code.
 * Sensors for reporting in/mid/out pipe temperatures (if supported by unit).
-* Input fields for installer fan speed setting (to fine-tune fan speeds, 0-255 with 0 being factory default)
-* Detects & exposes only supported capabilities for the connected indoor unit
+* Input field for sleep timer from 0 to 420 minutes (0 turns off the sleep timer).
+* Input fields for installer fan speed setting (to fine-tune fan speeds, 0-255 with 0 being factory default).
+* Detects & exposes only supported capabilities for the connected indoor unit.
 * YAML option for installer setting 15 (to change over heating behavior in heating mode).
 
 The LG ThinQ app and wireless remote can still be used to change these settings and other settings. They'll be synchronized with this controller.
