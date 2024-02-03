@@ -8,9 +8,7 @@ This has some advantages compared to the [LG ThinQ integration](https://github.c
 * No annoying sounds from the AC unit when changing settings through the controller.
 * More settings and information available (although some settings like display light on/off are available in ThinQ but aren't passed to the wired controller).
 
-<img src="hardware-tiny/pcb.jpg" width="400px" alt="Tiny PCB">
-<img src="images/controller2.jpg" width="255px" alt="PCB in enclosure">
-
+<img src="hardware-tiny/pcb.jpg" width="400px" alt="Tiny PCB"> <img src="images/controller2.jpg" width="255px" alt="PCB in enclosure">
 <img src="images/controller4.png" width="660px" alt="Screenshot of Home Assistant dashboard">
 
 # Protocol and Compatibility
