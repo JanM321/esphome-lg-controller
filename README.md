@@ -11,7 +11,7 @@ This has some advantages compared to the [LG ThinQ integration](https://github.c
 <img src="hardware-tiny/pcb.jpg" width="400px" alt="Tiny PCB"> <img src="images/controller2.jpg" width="255px" alt="PCB in enclosure">
 <img src="images/controller4.png" width="660px" alt="Screenshot of Home Assistant dashboard">
 
-# Protocol and Compatibility
+# Compatibility
 ### Supported AC units
 This ESPHome controller has been used with the following units:
 * LG PC12SQ (Standard Plus), AP09RT units connected to a multi-split outdoor unit (heat pump, MU2R17 Multi F).
@@ -23,7 +23,7 @@ This ESPHome controller has been used with the following units:
 
 If your indoor unit supports the LG PREMTB100 and/or LG PREMTA200 controller, it will very likely be compatible. Please let us know if it works so we can add it to this list :)
 
-### Longer answer
+### Details
 There seem to be two different protocols that LG AC units and wall controllers use to communicate: 
 1. **6-byte protocol**: the controller sends a 6-byte message every four seconds or so and the AC unit responds with a 6-byte message. This is the more basic protocol and likely older because it doesn't support advanced features and settings. An ESPHome implementation of this is available here: https://github.com/Flameeyes/esphome-lg-pqrcuds0
 2. **13-byte [protocol](protocol.md)**: the controller sends a 13-byte status message every 20 seconds (or when there's a change in settings) and the AC unit sends a very similar status message every 60 seconds. There are also other message types for more advanced settings. **This is the one implemented here.**
@@ -60,10 +60,17 @@ The LG ThinQ app and wireless remote can still be used to change these settings 
 Unfortunately not all settings are exposed to the wired controller, but if you're interested in a feature and it's supported by the PREMTB100 or PREMTA200 controller, please open an issue and we can consider adding it.
 
 # Hardware
+You need at least the following parts for each indoor unit:
+* PCB. Either my original PCB in the [hardware/](hardware/) directory or the cheaper and smaller PCB in the [hardware-tiny/](hardware-tiny/) directory.
+* ESP32 DevKitC board. I used an Espressif ESP32-DevKitC-32E.
+* Cable with JST-XH connector to connect the PCB to the AC. I used an Adafruit 4873 cable.
 
-***❗ Update November 2023: This section is for my original PCB in the hardware/ directory. [Florian Brede](https://github.com/florianbrede-ayet) has designed a smaller and cheaper PCB that can be ordered from JLCPCB. It's in the hardware-tiny/ directory.***
+The `hardware-tiny/` PCB can be ordered from [JLCPCB](https://cart.jlcpcb.com/quote/) (see instructions [here](https://github.com/JanM321/esphome-lg-controller/issues/2#issuecomment-1801803656)). The `hardware/` PCB I ordered from [PCBWay](https://www.pcbway.com/QuickOrderOnline.aspx).
 
-<img src="hardware/schematic.png" width="100%" height="100%">
+## PCB (details)
+***❗ Update November 2023: This section is for my original PCB in the hardware/ directory. [Florian Brede](https://github.com/florianbrede-ayet) has designed a smaller and cheaper PCB that can be ordered from JLCPCB. It's in the [hardware-tiny/](hardware-tiny/) directory.***
+
+<img src="hardware/schematic.png" width="700px">
 
 See [hardware/](hardware/) for schematic and list of materials. This part was based on the excellent work and research by [@Flameeyes](https://github.com/Flameeyes):
 * https://flameeyes.blog/tag/lg/
@@ -76,22 +83,24 @@ A devkit module is nice for this because it doesn't need any external components
 3) **Voltage regulator**. This is needed because the AC supplies 12V but the microcontroller requires 3.3V. I replaced the voltage regulator part with a [Traco Power TSRN 1-2433](https://www.tracopower.com/int/model/tsrn-1-2433) step-down switching regulator because it doesn't require any external components such as capacitors or inductors. (In hindsight, the [Traco Power TSR 1-2433](https://www.tracopower.com/int/model/tsr-1-2433) might have been better because it's cheaper and has better availability.)
 4) **Connector**. To connect the PCB to the AC. I used a screw terminal for this.
 
-My PCB also has some capacitors, resistors and diodes that are based on the TLIN1027DRQ1 data sheet. I'm not sure if these are really necessary but I included them to be safe and it works well. I used SMT components if available because I had the PCBs assembled by [PCBWay](https://www.pcbway.com/). _Update november 2023: the hardware-tiny/ PCB can be ordered from JLCPCB._
+My PCB also has some capacitors, resistors and diodes that are based on the TLIN1027DRQ1 data sheet. I'm not sure if these are really necessary but I included them to be safe and it works well. I used SMT components if available because I had the PCBs assembled by [PCBWay](https://www.pcbway.com/). **Update november 2023: the hardware-tiny/ PCB can be ordered from JLCPCB.**
 
 Note: an alternative for the LIN transceiver is the opto-isolator design used here:
 * https://github.com/AussieMakerGeek/LG_Aircon_MQTT_interface
 * https://www.instructables.com/Hacking-an-LG-Ducted-Split-for-Home-Automation/
 
 # Firmware
-There are multiple ways to build the firmware, flash it on the device, and add the controller in Home Assistant. I used the following steps:
+I used the following steps to build the ESPHome firmware, flash it on the device, and add the controller in Home Assistant:
 1. Clone this repository and navigate to the `esphome` directory.
 2. Install ESPHome command line tools on Linux: https://esphome.io/guides/installing_esphome.html
 3. Ensure the Python virtual environment is activated (`source venv/bin/activate`).
 4. Copy `template.yaml` to (for example) `lg-livingroom.yaml` and edit the lines marked with `XXX`.
-5. Connect the ESP32 module to your computer with a micro USB cable. This is only needed the first time, after that it can use OTA updates over wifi.
+5. Connect the ESP32 DevKitC board to your computer with a micro USB cable. This is only needed the first time, after that it can use OTA updates over wifi.
 6. Run `esphome run lg-livingroom.yaml` to build the firmware and upload it to the device.
 7. The device can now be added in Home Assistant (Settings => Devices & Services). HA will ask you for the encryption key from the YAML file.
- 
+8. Disconnect the micro USB cable.
+9. Install the ESP32 DevKitC board on the PCB and connect the PCB to the AC.
+
 If you just want to connect to the device to view the debug logs, use `esphome logs lg-livingroom.yaml`.
 
 # Tips
