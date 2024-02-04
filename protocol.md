@@ -22,21 +22,23 @@ My custom controller also checks that each message we send is transmitted uncorr
 bus, so the controller always receives its own messages too.
 
 ## Message format
-Each message is 13 bytes long. The upper four bits of the first byte indicate the sender:
-* Master controller uses 0xAx, for example 0xA8 or 0xAA.
-* Slave controller uses 0x2x.
-* AC unit uses 0xCx.
+Each message is 13 bytes long. The first byte indicates the message type:
+| Bits | Description |
+| --- | --- |
+| `XXXX_0000` | Source of the message<br>0xA: master controller (for example 0xA8 or 0xAA)<br>0xC: AC unit (for example 0xC8 or 0xC9)<br>0x2: slave controller |
+| `0000_X000` | Product type <br>0: ventilation<br>1: AC|
+| `0000_0XXX` | Message type (0-7)<br>0: status message<br>1: capabilities message<br>2: settings<br>... see below ... |
 
-The lower four bits of this byte are used for the message type. For example 0xC8 means it's a status message sent by the AC unit. 
+For example 0xC8 means it's a status message sent by the AC unit.
+
+Bit 0x8 is always set for normal HVAC units. LG controllers will send messages with this bit cleared only when connected to a ventilation product. This documentation and the ESPHome controller only cover AC units.
 
 The last byte of each message is a checksum, computed by adding up the other bytes and XOR'ing with 0x55.
 
-## Status message (0xA8/0xC8/0x28)
+## Type 0: Status message (0xA8/0xC8/0x28)
 Status messages are used to control all of the basic settings such as operation mode, fan mode, room temperature, etc.
 
 The controller will send this when a setting changes or else every 20 seconds. For the AC unit this is every 60 seconds.
-
-Format:
 | Byte | Bits | Description |
 | --- | --- | --- |
 | 0 | `XXXX_XXXX` | Message type, `0xA8/0xC8/0x28` |
@@ -116,7 +118,7 @@ To disable a single reservation or timer, the number of minutes can be set to 0.
 
 Because multiple reservation types can be active at the same time, the controller also has a way to disable individual ones: byte 10 has bit `0x80` set and then byte 9 has a single bit for each of the following if they're enabled: turn-off reservation (`0x4`), turn-on reservation (`0x8`), sleep timer (`0x10`), and simple timer (`0x20`). My AC unit doesn't send messages like this, it just uses the reservation type with number of minutes > 0 to enable a reservation or timer, and 0 minutes to disable it.
 
-## Capabilities message (0xC9)
+## Type 1: Capabilities message (0xC9)
 The AC sends this to the controller when it's powered on to tell it which features are supported.
 | Byte | Bits | Description |
 | --- | --- | --- |
@@ -193,7 +195,7 @@ The AC sends this to the controller when it's powered on to tell it which featur
 |    | `X000_0000` | Supports simple dry contact installer setting 41 |
 | 12 | `XXXX_XXXX` | Checksum |
 
-## Advanced settings (0xAA/0xCA)
+## Type 2: Settings (0xAA/0xCA)
 Type 0xA messages store more advanced settings and are only sent when the AC is powered on or when changing settings.
 
 | Byte | Bits | Description |
@@ -217,9 +219,8 @@ Type 0xA messages store more advanced settings and are only sent when the AC is 
 |    | `XXXX_0000` | Unknown |
 | 12 | `XXXX_XXXX` | Checksum |
 
-## More settings (0xAB/0xCB)
-0xB stores more information and settings (whether Wifi AP mode is on, installer settings, etc). There's some information in the comments of https://www.instructables.com/Hacking-an-LG-Ducted-Split-for-Home-Automation/
-Unlike the information there, my unit and controller don't send this regularly but only when changing some installer settings or after power on (AC unit).
+## Type 3: More settings (0xAB/0xCB)
+0xB stores more information and settings (whether Wifi AP mode is on, installer settings, etc).
 
 | Byte | Bits | Description |
 | --- | --- | --- |
@@ -269,7 +270,7 @@ Bytes 3-5 contain pipe temperature values. A higher value indicates a lower temp
 | 0xE0 | \-16 | \-17 | \-18 | \-18 | \-19 | \-20 | \-20 | \-21 | \-22 | \-22 | \-23 | \-24 | \-25 | \-26 | \-27 | \-28 |
 | 0xF0 | \-29 | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   | \-   |
 
-## Type 0xC (0xAC/0xCC)
+## Type 4: More status information (0xAC/0xCC)
 The wall controller sends these regularly and apparently some AC units do this too, but I've never seen this from my unit.
 Example from my notes, but I haven't checked if this is accurate:
 ```
@@ -281,8 +282,8 @@ Byte 9 is the room temperature (from controller) or unit temperature (from AC). 
 
 Byte 11 controls some functions such as himalaya cool (0x1), mosquito away (0x2), and comfort cooling (0x4).
 
-## Type 0xD settings (0xAD/0xCD)
-My unit sends this after power on with all zeroes. The wall controller uses it for some installer settings.
+## Type 5: Advanced settings (0xAD/0xCD)
+My unit sends this after power on with all zeroes. The wall controller uses it for installer settings.
 ```
 Set 25 (auxiliary heater) to duct-type:          ad 04 ...
 Set 36 (use primary heater control) to 1:        ad 40 ...
@@ -291,12 +292,12 @@ Set 39 (indoor unit auto start) to 1:            ad 01
 Set 41 (simple dry contact setting) to 3:        ad 00 00 00 00 00 03 00 00 00 00 00 ..
 ```
 
-## Type 0xE settings (0xAE/0xCE)
-Also used for installer settings. The format here is a bit different, with the second byte as additional message type.
+## Type 6: More settings or status information (0xAE/0xCE)
+The format here is a bit different, with the second byte as additional message type (probably because they ran out of message types).
 ```
-CE.00... => available settings?
+CE.00... => extended capabilities message? unit sends this with available settings
 
-CE.10... => used to set certain settings
+CE.10... => used to set settings
 Set 46 (fan continuous) to 1:                        ae 10 00 00 02 00 00 00 00 00 00 00 ..
 Set 47 (outdoor unit function) to 1:                 ae 10 00 00 00 10 00 00 00 00 00 00 ..
 Set 48 (silent mode) to 2:                           ae 10 00 02 00 00 00 00 00 00 00 00 ..
@@ -309,8 +310,6 @@ Set it to 2 (cool) with step 4:                      ae 10 00 00 00 00 09 00 00 
 Set 60 (outdoor unit cycle priority) to 1 (special): ae 10 00 00 00 00 20 00 00 00 00 00 ..
 Set 57 (outdoor temp for heating stages) to 1:       ae 10 00 00 00 00 40 00 00 00 00 00 ..
 Set it to 3 with 27.5C:                              ae 10 00 00 00 00 00 00 5b 00 00 00 .. => 0x1b = 27, other bit is for 0.5
-
-Advanced fan speed 'auto':                           ae 10 00 00 04 00 00 00 00 00 00 00 ..
 
 CE 11... => used for air quality monitoring values?
 ```
@@ -325,13 +324,10 @@ AE.80.3C.0F.17.00.2A.74.02.00.12.04.13
 - byte 12:     checksum
 ```
 
-## Type F (0xAF/0xCF)
+## Type 7: More status information (0xAF/0xCF)
 Used by newer units and controllers. Contains unit's current power usage among other things. Some examples from PREMTB100:
 ```
 CF.00.12.34.56.00.00.00.00.00.00.00.3E => 123.5 kW
 CF.00.98.76.54.00.00.00.00.00.00.00.64 => 987.7 kW
 CF.00.AB.CD.EF.00.00.00.00.00.00.00.63 => 1123.5 kW
 ```
-
-## Other
-Types 0x0 and 0x1 seem related to external ventilation products.
