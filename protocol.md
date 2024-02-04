@@ -106,7 +106,9 @@ For example when the controller sets a "simple reservation" to turn on/off after
 7 hours: a8 43 00 10 00 00 03 1d 29 a4 00 00 => 0x100 + 0xa4 => 420 minutes
                   ^              ^^ ^^
 ```
-The sleep timer option uses a different reservation type (3) in byte 8. Unlike the other timers, the sleep timer is handled by the controller: the controller has to send the (updated) number of minutes regularly and turn off the unit if it reaches 0.
+If a wired controller is connected, it looks like the unit makes it the controller's responsibility to implement these timers and turn the unit on/off.
+
+The sleep timer option uses a different reservation type (3) in byte 8. The sleep timer is the only reservation type that the controller keeps sending regularly with the updated number of minutes. Unlike the other reservation types, the sleep timer can't be emulated with Home Assistant automations because some units use an extra-low fan speed and reduce power usage when the sleep timer is on. This is why the ESPHome controller supports sleep timers natively but not any of the other timers.
 
 The turn-off/turn-on reservations are set based on the target time, but the controller always converts this to number of minutes relative to the current time.
 
