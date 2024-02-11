@@ -24,12 +24,6 @@ class LgSwitch final : public Switch {
   }
 };
 
-// Installer settings that can be set in the YAML file.
-struct InstallerSettings {
-    // Installer setting 15.
-    uint8_t over_heating = 0;
-};
-
 class LgController final : public climate::Climate, public Component {
     static constexpr size_t MsgLen = 13;
     static constexpr int RxPin = 26; // Keep in sync with rx_pin in base.yaml.
@@ -42,6 +36,7 @@ class LgController final : public climate::Climate, public Component {
     esphome::template_::TemplateSelect* vane_select_2_;
     esphome::template_::TemplateSelect* vane_select_3_;
     esphome::template_::TemplateSelect* vane_select_4_;
+    esphome::template_::TemplateSelect* overheating_select_;
 
     esphome::template_::TemplateNumber* fan_speed_slow_;
     esphome::template_::TemplateNumber* fan_speed_low_;
@@ -88,9 +83,9 @@ class LgController final : public climate::Climate, public Component {
 
     bool is_initializing_ = true;
 
-    InstallerSettings installer_settings_;
     uint8_t vane_position_[4] = {0,0,0,0};
     uint8_t fan_speed_[4] = {0,0,0,0};
+    uint8_t overheating_ = 0;
 
     optional<uint32_t> sleep_timer_target_millis_{};
     bool active_reservation_ = false;
@@ -121,6 +116,7 @@ class LgController final : public climate::Climate, public Component {
     VERTICAL_SWING,
     HORIZONTAL_SWING,
     HAS_ESP_VALUE_SETTING,
+    OVERHEATING_SETTING,
     };
 
     bool parse_capability(LgCapability capability) {
@@ -162,6 +158,8 @@ class LgController final : public climate::Climate, public Component {
                 return (nvs_storage_.capabilities_message[1] & 0x40) != 0;
             case HAS_ESP_VALUE_SETTING:
                 return (nvs_storage_.capabilities_message[4] & 0x02) != 0;
+            case OVERHEATING_SETTING:
+                return (nvs_storage_.capabilities_message[7] & 0x80) != 0;
             default:
                 return false;
         }
@@ -277,6 +275,7 @@ class LgController final : public climate::Climate, public Component {
                 }
             }
 
+            overheating_select_->set_internal(!parse_capability(LgCapability::OVERHEATING_SETTING));
             purifier_.set_internal(!parse_capability(LgCapability::PURIFIER));        
         }
     }  
@@ -288,6 +287,7 @@ public:
                  esphome::template_::TemplateSelect* vane_select_2, 
                  esphome::template_::TemplateSelect* vane_select_3, 
                  esphome::template_::TemplateSelect* vane_select_4,
+                 esphome::template_::TemplateSelect* overheating_select,
                  esphome::template_::TemplateNumber* fan_speed_slow,
                  esphome::template_::TemplateNumber* fan_speed_low,
                  esphome::template_::TemplateNumber* fan_speed_medium,
@@ -300,6 +300,7 @@ public:
         vane_select_2_(vane_select_2),
         vane_select_3_(vane_select_3),
         vane_select_4_(vane_select_4),
+        overheating_select_(overheating_select),
         fan_speed_slow_(fan_speed_slow),
         fan_speed_low_(fan_speed_low),
         fan_speed_medium_(fan_speed_medium),
@@ -431,6 +432,25 @@ public:
         }
     }
 
+    // Set overheating installer setting 15 to 0-4.
+    void set_overheating(int value) {
+        if (value < 0 || value > 4) {
+            ESP_LOGE(TAG, "Unexpected overheating value: %d", value);
+            return;
+        }
+
+        if (overheating_ == value) {
+            return;
+        }
+
+        ESP_LOGD(TAG, "Setting overheating installer setting: %d", value);
+
+        overheating_ = value;
+        if (!is_initializing_) {
+            pending_type_b_settings_change_ = true;
+        }
+    }
+
     void set_sleep_timer(int minutes) {
         if (ignore_sleep_timer_callback_) {
             return;
@@ -442,10 +462,6 @@ public:
         }
         set_sleep_timer_internal(uint32_t(minutes));
         set_changed();
-    }
-
-    InstallerSettings& installer_settings() {
-        return installer_settings_;
     }
 
     // Note: sensors and switches returned here must match the names in base.yaml.
@@ -744,8 +760,8 @@ private:
             send_buf_[1] &= ~0x80;
         }
 
-        // Byte 2 stores installer setting 15. Set to value from the YAML file.
-        send_buf_[2] = (send_buf_[2] & 0xC7) | ((installer_settings_.over_heating & 0xf) << 3);
+        // Byte 2 stores installer setting 15.
+        send_buf_[2] = (send_buf_[2] & 0xC7) | (overheating_ << 3);
 
         send_buf_[12] = calc_checksum(send_buf_);
 
@@ -1030,6 +1046,14 @@ private:
         }
 
         last_sent_recv_type_b_millis_ = millis();
+
+        uint8_t overheating = (buffer[2] >> 3) & 0b111;
+        if (overheating <= 4) {
+            overheating_ = overheating;
+            overheating_select_->publish_state(*overheating_select_->at(overheating));
+        } else {
+            ESP_LOGE(TAG, "Unexpected overheating value: %u", overheating);
+        }
 
         // Table mapping a byte value to degrees Celsius based on values displayed by PREMTB100.
         // INT8_MIN indicates an invalid value.

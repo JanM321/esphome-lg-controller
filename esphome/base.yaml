@@ -113,6 +113,20 @@ select:
     on_value:
       - lambda: |-
           ((LgController*)id(${deviceid}))->set_vane_position(4, i);
+  - platform: template
+    name: Over Heating # Installer setting 15.
+    id: overheating
+    optimistic: true
+    icon: mdi:heating-coil
+    options:
+      - "0 (Default)"
+      - "1 (+4C/+6C)"
+      - "2 (+2C/+4C)"
+      - "3 (-1C/+1C)"
+      - "4 (-0.5C/+0.5C)"
+    on_value:
+      - lambda: |-
+          ((LgController*)id(${deviceid}))->set_overheating(i);
 
 number:
   - platform: template
@@ -187,10 +201,10 @@ climate:
     lambda: |-
       auto* controller = new LgController(id(ac_serial), id(temperature_sensor), 
                                 id(vane_position_1), id(vane_position_2), id(vane_position_3), id(vane_position_4),
+                                id(overheating),
                                 id(fan_speed_slow), id(fan_speed_low), id(fan_speed_medium), id(fan_speed_high),
                                 id(sleep_timer)
                               );
-      controller->installer_settings().over_heating = ${over_heating_installer_setting};
       App.register_component(controller);
       return {controller};
     climates:
