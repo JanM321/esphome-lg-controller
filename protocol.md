@@ -25,15 +25,17 @@ bus, so the controller always receives its own messages too.
 Each message is 13 bytes long. The first byte indicates the message type:
 | Bits | Description |
 | --- | --- |
-| `XXXX_0000` | Source of the message<br>0xA: master controller (for example 0xA8 or 0xAA)<br>0xC: AC unit (for example 0xC8 or 0xC9)<br>0x2: slave controller |
-| `0000_X000` | Product type <br>0: ventilation<br>1: AC|
+| `XXX0_0000` | Source of the message<br>1: slave controller (for example `0x28` or `0x2A`)<br>5: master controller (for example `0xA8` or `0xAA`)<br>6: unit (for example `0xC8` or `0xC9`) |
+| `000X_X000` | Product type <br>0: ventilation<br>1: AC<br>2: heat exchanger?|
 | `0000_0XXX` | Message type (0-7)<br>0: status message<br>1: capabilities message<br>2: settings<br>... see below ... |
 
-For example 0xC8 means it's a status message sent by the AC unit.
+The two "product type" bits are always set to `01` for normal HVAC units. This means the (master) controller sends messages with first byte `0xA8` to `0xAF` and the AC unit will send messages `0xC8` to `0xCF`. You can use this to identify the source of a message.
 
-Bit 0x8 is always set for normal HVAC units. LG controllers will send messages with this bit cleared only when connected to a ventilation product. This documentation and the ESPHome controller only cover AC units.
+For instance, `0xC8` is a status message sent by the AC unit. `0xAA` is a settings message sent by the controller.
 
-The last byte of each message is a checksum, computed by adding up the other bytes and XOR'ing with 0x55.
+LG controllers send messages with the product type field set to 0 or 2 only when connected to a ventilation product responding with such messages. For example if a heat exchanger unit responds with `0xD0` messages, the LG controllers will switch from sending `0xA8` to `0xB0` messages. This documentation and the ESPHome controller only cover AC units.
+
+The last byte of each message is a checksum, computed by adding up the other bytes and XOR'ing with `0x55`.
 
 ## Type 0: Status message (0xA8/0xC8/0x28)
 Status messages are used to control all of the basic settings such as operation mode, fan mode, room temperature, etc.
