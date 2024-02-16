@@ -28,7 +28,7 @@ class LgController final : public climate::Climate, public Component {
     static constexpr size_t MsgLen = 13;
     static constexpr int RxPin = 26; // Keep in sync with rx_pin in base.yaml.
 
-    climate::ClimateTraits supported_traits_;    
+    climate::ClimateTraits supported_traits_;
 
     esphome::uart::UARTComponent* serial_;
     esphome::sensor::Sensor* temperature_sensor_;
@@ -96,6 +96,11 @@ class LgController final : public climate::Climate, public Component {
         uint8_t capabilities_message[13] = {};
     };
     NVSStorage nvs_storage_;
+
+    // Whether a message came from the HVAC unit, a master controller, or a slave controller.
+    enum class MessageSender : uint8_t { Unit, Master, Slave };
+    // Set if this controller is configured as slave controller.
+    const bool slave_;
 
     enum LgCapability {
     PURIFIER,
@@ -210,7 +215,7 @@ class LgController final : public climate::Climate, public Component {
             if (parse_capability(LgCapability::MODE_DEHUMIDIFY))
                 device_modes.insert(climate::CLIMATE_MODE_DRY);
             supported_traits_.set_supported_modes(device_modes);
-            
+
             std::set<climate::ClimateFanMode> fan_modes;
             if (parse_capability(LgCapability::FAN_AUTO))
                 fan_modes.insert(climate::CLIMATE_FAN_AUTO);
@@ -233,7 +238,7 @@ class LgController final : public climate::Climate, public Component {
             if (parse_capability(LgCapability::HORIZONTAL_SWING))
                 swing_modes.insert(climate::CLIMATE_SWING_HORIZONTAL);
             supported_traits_.set_supported_swing_modes(swing_modes);
-            
+
 
             // Disable unsupported entities
             vane_select_1_->set_internal(true);
@@ -260,39 +265,46 @@ class LgController final : public climate::Climate, public Component {
             fan_speed_medium_->set_internal(true);
             fan_speed_high_->set_internal(true);
 
-            if (parse_capability(LgCapability::HAS_ESP_VALUE_SETTING)) {
-                if (parse_capability(LgCapability::FAN_SLOW)) {
-                    fan_speed_slow_->set_internal(false);
+            if (!slave_) {
+                if (parse_capability(LgCapability::HAS_ESP_VALUE_SETTING)) {
+                    if (parse_capability(LgCapability::FAN_SLOW)) {
+                        fan_speed_slow_->set_internal(false);
+                    }
+                    if (parse_capability(LgCapability::FAN_LOW)) {
+                        fan_speed_low_->set_internal(false);
+                    }
+                    if (parse_capability(LgCapability::FAN_MEDIUM)) {
+                        fan_speed_medium_->set_internal(false);
+                    }
+                    if (parse_capability(LgCapability::FAN_HIGH)) {
+                        fan_speed_high_->set_internal(false);
+                    }
                 }
-                if (parse_capability(LgCapability::FAN_LOW)) {
-                    fan_speed_low_->set_internal(false);
-                }
-                if (parse_capability(LgCapability::FAN_MEDIUM)) {
-                    fan_speed_medium_->set_internal(false);
-                }
-                if (parse_capability(LgCapability::FAN_HIGH)) {
-                    fan_speed_high_->set_internal(false);
-                }
+                overheating_select_->set_internal(!parse_capability(LgCapability::OVERHEATING_SETTING));
             }
-
-            overheating_select_->set_internal(!parse_capability(LgCapability::OVERHEATING_SETTING));
-            purifier_.set_internal(!parse_capability(LgCapability::PURIFIER));        
+            purifier_.set_internal(!parse_capability(LgCapability::PURIFIER));
         }
-    }  
+
+        if (slave_) {
+            internal_thermistor_.set_internal(true);
+            sleep_timer_->set_internal(true);
+        }
+    }
 
 public:
     LgController(esphome::uart::UARTComponent* serial,
                  esphome::sensor::Sensor* temperature_sensor,
-                 esphome::template_::TemplateSelect* vane_select_1, 
-                 esphome::template_::TemplateSelect* vane_select_2, 
-                 esphome::template_::TemplateSelect* vane_select_3, 
+                 esphome::template_::TemplateSelect* vane_select_1,
+                 esphome::template_::TemplateSelect* vane_select_2,
+                 esphome::template_::TemplateSelect* vane_select_3,
                  esphome::template_::TemplateSelect* vane_select_4,
                  esphome::template_::TemplateSelect* overheating_select,
                  esphome::template_::TemplateNumber* fan_speed_slow,
                  esphome::template_::TemplateNumber* fan_speed_low,
                  esphome::template_::TemplateNumber* fan_speed_medium,
                  esphome::template_::TemplateNumber* fan_speed_high,
-                 esphome::template_::TemplateNumber* sleep_timer
+                 esphome::template_::TemplateNumber* sleep_timer,
+                 bool is_slave_controller
                  )
       : serial_(serial),
         temperature_sensor_(temperature_sensor),
@@ -307,7 +319,8 @@ public:
         fan_speed_high_(fan_speed_high),
         sleep_timer_(sleep_timer),
         purifier_(this),
-        internal_thermistor_(this)
+        internal_thermistor_(this),
+        slave_(is_slave_controller)
     {
     }
 
@@ -351,7 +364,7 @@ public:
 
         // Configure climate traits and entities based on the capabilities message (if available)
         configure_capabilities();
-        
+
 
         while (serial_->available() > 0) {
             uint8_t b;
@@ -460,6 +473,10 @@ public:
             ESP_LOGE(TAG, "Ignoring invalid sleep timer value: %d minutes", minutes);
             return;
         }
+        if (slave_) {
+            ESP_LOGE(TAG, "Ignoring sleep timer for slave controller");
+            return;
+        }
         set_sleep_timer_internal(uint32_t(minutes));
         set_changed();
     }
@@ -545,8 +562,8 @@ private:
     }
 
     void send_status_message() {
-        // Byte 0: status message (0x8) from the controller (0xA0).
-        send_buf_[0] = 0xA8;
+        // Byte 0: message type.
+        send_buf_[0] = slave_ ? 0x28 : 0xA8;
 
         // Byte 1: changed flag (0x1), power on (0x2), mode (0x1C), fan speed (0x70).
         uint8_t b = 0;
@@ -631,7 +648,7 @@ private:
         } else {
             send_buf_[3] &= ~0x10;
         }
-    
+
         // Byte 4.
         send_buf_[4] = last_recv_status_[4];
 
@@ -698,22 +715,23 @@ private:
         last_sent_status_millis_ = millis();
 
         // If we sent an updated temperature to the AC, update temperature in HA too.
-        if (thermistor == ThermistorSetting::Controller && this->current_temperature != temp) {
+        // Slave controller temperature sensor is ignored.
+        if (!slave_ && thermistor == ThermistorSetting::Controller && this->current_temperature != temp) {
             this->current_temperature = temp;
             publish_state();
         }
     }
 
     void send_type_a_settings_message() {
-        if (last_recv_type_a_settings_[0] != 0xCA) {
-            ESP_LOGE(TAG, "Unexpected missing CA message");
+        if (last_recv_type_a_settings_[0] != 0xCA && last_recv_type_a_settings_[0] != 0xAA) {
+            ESP_LOGE(TAG, "Unexpected missing previous CA/AA message");
             pending_type_a_settings_change_ = false;
             return;
         }
 
-        // Copy settings from the CA message we received.
+        // Copy settings from the CA/AA message we received.
         memcpy(send_buf_, last_recv_type_a_settings_, MsgLen);
-        send_buf_[0] = 0xAA;
+        send_buf_[0] = slave_ ? 0x2A : 0xAA;
 
         // Bytes 2-6 store the installer fan speeds
         send_buf_[2] = fan_speed_[0];
@@ -741,17 +759,17 @@ private:
         if (timed) {
             ESP_LOGD(TAG, "sending timed AB message");
         }
-        if (last_recv_type_b_settings_[0] != 0xCB) {
-            ESP_LOGE(TAG, "Unexpected missing CB message");
+        if (last_recv_type_b_settings_[0] != 0xCB && last_recv_type_b_settings_[0] != 0xAB) {
+            ESP_LOGE(TAG, "Unexpected missing previous CB/AB message");
             pending_type_b_settings_change_ = false;
             // Don't try to send another message immediately after.
             last_sent_recv_type_b_millis_ = millis();
             return;
         }
 
-        // Copy settings from the CB message we received.
+        // Copy settings from the CB/AB message we received.
         memcpy(send_buf_, last_recv_type_b_settings_, MsgLen);
-        send_buf_[0] = 0xAB;
+        send_buf_[0] = slave_ ? 0x2B : 0xAB;
 
         // Set the high bit of the second byte to request a CB message from the unit.
         if (timed) {
@@ -795,51 +813,49 @@ private:
             return;
         }
 
-        // We're only interested in status or settings messages from the AC.
-        if (buffer[0] == 0xC8) {
-            process_status_message(buffer, had_error);
-            return;
-        }
-        if (buffer[0] == 0xCA) {
-            process_type_a_settings_message(buffer);
-            return;
-        }
-        if (buffer[0] == 0xCB) {
-            process_type_b_settings_message(buffer);
-            return;
-        }
-        if (buffer[0] == 0xC9) {
-            // Capabilities message. The unit sends this with the other settings so we're now
-            // initialized.
-
-            // Check if we need to update the capabilities message.
-            if (nvs_storage_.capabilities_message[0] == 0 || 
-                std::memcmp(nvs_storage_.capabilities_message, buffer, MsgLen - 1) != 0) {
-                
-                bool needsRestart = (nvs_storage_.capabilities_message[0] == 0);
-
-                ESPPreferenceObject pref = global_preferences->make_preference<NVSStorage>(this->get_object_id_hash() ^ NVS_STORAGE_VERSION);
-                memcpy(nvs_storage_.capabilities_message, buffer, MsgLen);
-
-                // If no capabilities were stored in NVS before, restart to make sure we get the correct traits for climate
-                // No restart just on changes (which is unlikely anyway) to make sure we don't end up in a bootloop for faulty devices / communication
-                if (needsRestart) {
-                    pref.save(&nvs_storage_);
-                    global_preferences->sync();
-                    ESP_LOGD(TAG, "restarting to apply initial capabilities");
-                    ESP.restart();
+        // Determine message type.
+        optional<MessageSender> sender;
+        switch (buffer[0] & 0xf8) {
+            case 0xC8:
+                sender = MessageSender::Unit;
+                break;
+            case 0xA8:
+                if (!slave_) {
+                    // Ignore (our own?) master controller messages.
+                    return;
                 }
-                else {
-                    ESP_LOGD(TAG, "updated device capabilities, manual restart required to take effect");
+                sender = MessageSender::Master;
+                break;
+            case 0x28:
+                if (slave_) {
+                    // Ignore (our own?) slave controller messages.
+                    return;
                 }
-            }
+                sender = MessageSender::Slave;
+                break;
+            default:
+                return; // Unknown message sender. Ignore.
+        }
 
-            is_initializing_ = false;
-            return;
+        switch (buffer[0] & 0b111) {
+            case 0: // 0xC8/A8/28
+                process_status_message(*sender, buffer, had_error);
+                break;
+            case 1: // 0xC9
+                process_capabilities_message(*sender, buffer);
+                break;
+            case 2: // 0xCA/AA/2A
+                process_type_a_settings_message(*sender, buffer);
+                break;
+            case 3: // 0xCB/AB/2B
+                process_type_b_settings_message(*sender, buffer);
+                break;
+            default:
+                return;
         }
     }
 
-    void process_status_message(const uint8_t* buffer, bool* had_error) {
+    void process_status_message(MessageSender sender, const uint8_t* buffer, bool* had_error) {
         // If we just had a failure, ignore this messsage because it might be invalid too.
         if (*had_error) {
             ESP_LOGE(TAG, "ignoring due to previous error %s",
@@ -847,12 +863,21 @@ private:
             return;
         }
 
+        // Consider slave controller initialized if we received a status message from the other
+        // controller or the unit.
+        if (slave_) {
+            is_initializing_ = false;
+        }
+
         // Handle simple input sensors first. These are safe to update even if we have a pending
         // change.
 
         defrost_.publish_state(buffer[3] & 0x4);
         preheat_.publish_state(buffer[3] & 0x8);
-        error_code_.publish_state(buffer[11]);
+
+        if (sender == MessageSender::Unit) {
+            error_code_.publish_state(buffer[11]);
+        }
 
         // When turning on the outdoor unit, the AC sometimes reports ON => OFF => ON within a
         // few seconds. No big deal but it causes noisy state changes in HA. Only report OFF if
@@ -868,13 +893,20 @@ private:
             last_outdoor_change_millis_ = millis();
         }
 
-        // Report the unit's room temperature only if we're using the internal thermistor. With an
-        // external temperature sensor, some units report the temperature we sent and others
-        // always send the internal temperature.
-        if (internal_thermistor_.state) {
-            float unit_temp = float(buffer[7] & 0x3F) / 2 + 10;
-            if (this->current_temperature != unit_temp) {
-                this->current_temperature = unit_temp;
+        bool read_temp = false;
+        if (slave_) {
+            // Let the slave controller report the temperature from the master.
+            read_temp = (sender == MessageSender::Master);
+        } else {
+            // Report the unit's room temperature only if we're using the internal thermistor.
+            // With an external temperature sensor, some units report the temperature we sent and
+            // others always send the internal temperature.
+            read_temp = (sender == MessageSender::Unit && internal_thermistor_.state);
+        }
+        if (read_temp) {
+            float room_temp = float(buffer[7] & 0x3F) / 2 + 10;
+            if (this->current_temperature != room_temp) {
+                this->current_temperature = room_temp;
                 publish_state();
             }
         }
@@ -890,7 +922,9 @@ private:
             return;
         }
 
-        memcpy(last_recv_status_, buffer, MsgLen);
+        if (sender != MessageSender::Slave) {
+            memcpy(last_recv_status_, buffer, MsgLen);
+        }
 
         uint8_t b = buffer[1];
         if ((b & 0x2) == 0) {
@@ -965,22 +999,60 @@ private:
         active_reservation_ = buffer[3] & 0x10;
 
         // Set or clear sleep timer.
-        if (sleep_timer_target_millis_.has_value() && !active_reservation_) {
-            sleep_timer_->publish_state(0);
-        } else if (((buffer[8] >> 3) & 0x7) == 3) {
-            uint32_t minutes = (uint32_t(buffer[8] & 0x7) << 8) | buffer[9];
-            sleep_timer_->publish_state(minutes);
+        if (!slave_) {
+            if (sleep_timer_target_millis_.has_value() && !active_reservation_) {
+                sleep_timer_->publish_state(0);
+            } else if (((buffer[8] >> 3) & 0x7) == 3) {
+                uint32_t minutes = (uint32_t(buffer[8] & 0x7) << 8) | buffer[9];
+                sleep_timer_->publish_state(minutes);
+            }
         }
 
         publish_state();
     }
 
-    void process_type_a_settings_message(const uint8_t* buffer) {
+    void process_capabilities_message(MessageSender sender, const uint8_t* buffer) {
+        // Capabilities message. The unit sends this with the other settings so we're now
+        // initialized.
+
+        if (sender != MessageSender::Unit) {
+            ESP_LOGE(TAG, "ignoring capabilities message not from unit");
+            return;
+        }
+
+        // Check if we need to update the capabilities message.
+        if (nvs_storage_.capabilities_message[0] == 0 ||
+            std::memcmp(nvs_storage_.capabilities_message, buffer, MsgLen - 1) != 0) {
+
+            bool needsRestart = (nvs_storage_.capabilities_message[0] == 0);
+
+            ESPPreferenceObject pref = global_preferences->make_preference<NVSStorage>(this->get_object_id_hash() ^ NVS_STORAGE_VERSION);
+            memcpy(nvs_storage_.capabilities_message, buffer, MsgLen);
+
+            // If no capabilities were stored in NVS before, restart to make sure we get the correct traits for climate
+            // No restart just on changes (which is unlikely anyway) to make sure we don't end up in a bootloop for faulty devices / communication
+            if (needsRestart) {
+                pref.save(&nvs_storage_);
+                global_preferences->sync();
+                ESP_LOGD(TAG, "restarting to apply initial capabilities");
+                ESP.restart();
+            }
+            else {
+                ESP_LOGD(TAG, "updated device capabilities, manual restart required to take effect");
+            }
+        }
+
+        is_initializing_ = false;
+    }
+
+    void process_type_a_settings_message(MessageSender sender, const uint8_t* buffer) {
         // Send settings the first time we receive a 0xCA message.
-        bool first_time = last_recv_type_a_settings_[0] == 0;
-        memcpy(last_recv_type_a_settings_, buffer, MsgLen);
-        if (first_time) {
-            pending_type_a_settings_change_ = true;
+        if (sender != MessageSender::Slave) {
+            bool first_time = last_recv_type_a_settings_[0] == 0;
+            memcpy(last_recv_type_a_settings_, buffer, MsgLen);
+            if (first_time) {
+                pending_type_a_settings_change_ = true;
+            }
         }
 
         // Handle vane 1 position change
@@ -1019,25 +1091,31 @@ private:
             ESP_LOGE(TAG, "Unexpected vane 4 position: %u", vane4);
         }
 
-        // Handle fan speed 0 (slow) change
-        fan_speed_[0] = buffer[2];
-        fan_speed_slow_->publish_state(fan_speed_[0]);
-        
-        // Handle fan speed 1 (low) change
-        fan_speed_[1] = buffer[3];
-        fan_speed_low_->publish_state(fan_speed_[1]);
-        
-        // Handle fan speed 2 (medium) change
-        fan_speed_[2] = buffer[4];
-        fan_speed_medium_->publish_state(fan_speed_[2]);
+        if (sender != MessageSender::Slave) {
+            // Handle fan speed 0 (slow) change
+            fan_speed_[0] = buffer[2];
+            fan_speed_slow_->publish_state(fan_speed_[0]);
 
-        // Handle fan speed 3 (high) change
-        fan_speed_[3] = buffer[5];
-        fan_speed_high_->publish_state(fan_speed_[3]);
+            // Handle fan speed 1 (low) change
+            fan_speed_[1] = buffer[3];
+            fan_speed_low_->publish_state(fan_speed_[1]);
 
+            // Handle fan speed 2 (medium) change
+            fan_speed_[2] = buffer[4];
+            fan_speed_medium_->publish_state(fan_speed_[2]);
+
+            // Handle fan speed 3 (high) change
+            fan_speed_[3] = buffer[5];
+            fan_speed_high_->publish_state(fan_speed_[3]);
+        }
     }
 
-    void process_type_b_settings_message(const uint8_t* buffer) {
+    void process_type_b_settings_message(MessageSender sender, const uint8_t* buffer) {
+        // Ignore this message from other controllers.
+        if (sender != MessageSender::Unit) {
+            return;
+        }
+
         // Send installer settings the first time we receive a 0xCB message.
         bool first_time = last_recv_type_b_settings_[0] == 0;
         memcpy(last_recv_type_b_settings_, buffer, MsgLen);
@@ -1181,14 +1259,8 @@ private:
             }
         }
 
-        // Send a status message every 20 seconds, or now if we have a pending change.
-        // Send an AB message every 10 minutes to request pipe temperature values.
-        bool send_type_b_timed = (millis_now - last_sent_recv_type_b_millis_) > 10 * 60 * 1000;
-        if (!pending_status_change_ &&
-            !pending_type_a_settings_change_ &&
-            !pending_type_b_settings_change_ &&
-            !send_type_b_timed &&
-            millis_now - last_sent_status_millis_ < 20 * 1000) {
+        if (slave_ && is_initializing_) {
+            ESP_LOGD(TAG, "Not sending, waiting for other controller or unit to send first");
             return;
         }
 
@@ -1205,25 +1277,46 @@ private:
         // 500 ms might be overkill, but the device usually sends the same message twice with a
         // short delay (about 200 ms?) between them so let's not send there either to avoid
         // collisions.
-        while (true) {
-            if (serial_->available() > 0 || digitalRead(RxPin) == LOW) {
-                ESP_LOGD(TAG, "line busy, not sending yet");
-                return;
+        auto check_can_send = [&]() -> bool {
+            while (true) {
+                if (serial_->available() > 0 || digitalRead(RxPin) == LOW) {
+                    ESP_LOGD(TAG, "line busy, not sending yet");
+                    return false;
+                }
+                if (millis() - millis_now > 500) {
+                    return true;
+                }
+                delay(5);
             }
-            if (millis() - millis_now > 500) {
-                break;
-            }
-            delay(5);
-        }
+        };
 
         if (pending_type_a_settings_change_) {
-            send_type_a_settings_message();
-        } else if (pending_type_b_settings_change_) {
-            send_type_b_settings_message(/* timed = */ false);
-        } else if (send_type_b_timed) {
-            send_type_b_settings_message(/* timed = */ true);
-        } else {
-            send_status_message();
+            if (check_can_send()) {
+                send_type_a_settings_message();
+            }
+            return;
+        }
+        if (pending_type_b_settings_change_) {
+            if (check_can_send()) {
+                send_type_b_settings_message(/* timed = */ false);
+            }
+            return;
+        }
+        // Send an AB message every 10 minutes to request pipe temperature values.
+        if (!slave_ && (millis_now - last_sent_recv_type_b_millis_) > 10 * 60 * 1000) {
+            if (check_can_send()) {
+                send_type_b_settings_message(/* timed = */ true);
+            }
+            return;
+        }
+        // Send a status message every 20 seconds, or now if we have a pending change.
+        // Slave controllers only send this if needed.
+        if (pending_status_change_ ||
+            (!slave_ && millis_now - last_sent_status_millis_ > 20 * 1000)) {
+            if (check_can_send()) {
+                send_status_message();
+            }
+            return;
         }
     }
 };

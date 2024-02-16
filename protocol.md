@@ -40,7 +40,7 @@ The last byte of each message is a checksum, computed by adding up the other byt
 ## Type 0: Status message (0xA8/0xC8/0x28)
 Status messages are used to control all of the basic settings such as operation mode, fan mode, room temperature, etc.
 
-The controller will send this when a setting changes or else every 20 seconds. For the AC unit this is every 60 seconds.
+The controller and AC unit will send this when a setting changes. The AC unit will also send this every 60 seconds and 'master' controllers send this every 20 seconds.
 | Byte | Bits | Description |
 | --- | --- | --- |
 | 0 | `XXXX_XXXX` | Message type, `0xA8/0xC8/0x28` |

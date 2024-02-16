@@ -203,7 +203,8 @@ climate:
                                 id(vane_position_1), id(vane_position_2), id(vane_position_3), id(vane_position_4),
                                 id(overheating),
                                 id(fan_speed_slow), id(fan_speed_low), id(fan_speed_medium), id(fan_speed_high),
-                                id(sleep_timer)
+                                id(sleep_timer),
+                                ${is_slave_controller}
                               );
       App.register_component(controller);
       return {controller};
