@@ -24,6 +24,94 @@ class LgSwitch final : public Switch {
   }
 };
 
+// The LG protocol always uses Celsius. The HA/ESPHome climate component internally
+// converts between Fahrenheit and Celsius. Values from the Home Assistant room temperature sensor
+// are not converted automatically so can be Celsius or Fahrenheit.
+//
+// Unfortunately LG uses their own Fahrenheit/Celsius mapping that's different from what you'd
+// expect. For example, 78F is ~25.5C, but LG controllers will send 26C for 78F. A value of 25.5C
+// would be interpreted by the AC as 77F.
+//
+// This class has some functions to convert between Fahrenheit, Celsius and "LG-Celsius" (values
+// we send to or receive from the unit). This ensures Home Assistant and the LG unit always agree
+// on the setpoint in Fahrenheit.
+//
+// These conversions are only used in Fahrenheit mode.
+class TempConversion {
+private:
+    static constexpr int8_t FahToLGCel[] = {
+        0  /* 32  */, 1  /* 33  */, 2  /* 34  */, 3  /* 35  */, 4  /* 36  */,
+        5  /* 37  */, 6  /* 38  */, 7  /* 39  */, 8  /* 40  */, 10 /* 41  */,
+        12 /* 42  */, 13 /* 43  */, 14 /* 44  */, 15 /* 45  */, 16 /* 46  */,
+        17 /* 47  */, 18 /* 48  */, 19 /* 49  */, 20 /* 50  */, 21 /* 51  */,
+        22 /* 52  */, 23 /* 53  */, 24 /* 54  */, 25 /* 55  */, 26 /* 56  */,
+        27 /* 57  */, 28 /* 58  */, 30 /* 59  */, 32 /* 60  */, 33 /* 61  */,
+        34 /* 62  */, 35 /* 63  */, 36 /* 64  */, 37 /* 65  */, 38 /* 66  */,
+        39 /* 67  */, 40 /* 68  */, 41 /* 69  */, 42 /* 70  */, 43 /* 71  */,
+        44 /* 72  */, 45 /* 73  */, 46 /* 74  */, 47 /* 75  */, 48 /* 76  */,
+        50 /* 77  */, 52 /* 78  */, 53 /* 79  */, 54 /* 80  */, 55 /* 81  */,
+        56 /* 82  */, 57 /* 83  */, 58 /* 84  */, 59 /* 85  */, 60 /* 86  */,
+        61 /* 87  */, 62 /* 88  */, 63 /* 89  */, 64 /* 90  */, 65 /* 91  */,
+        66 /* 92  */, 67 /* 93  */, 68 /* 94  */, 70 /* 95  */, 72 /* 96  */,
+        73 /* 97  */, 74 /* 98  */, 75 /* 99  */, 76 /* 100 */, 77 /* 101 */,
+        78 /* 102 */, 79 /* 103 */, 80 /* 104 */
+    };
+    static constexpr int8_t LGCelToCelAdjustment[] = {
+         0 /* 0    */,  0 /* 0.5  */,  0 /* 1.0  */,  0 /* 1.5  */,  0 /* 2.0  */,
+         1 /* 2.5  */,  1 /* 3.0  */,  1 /* 3.5  */,  1 /* 4.0  */,  0 /* 4.5  */,
+         0 /* 5.0  */, -1 /* 5.5  */, -1 /* 6.0  */, -1 /* 6.5  */, -1 /* 7.0  */,
+        -1 /* 7.5  */,  0 /* 8.0  */,  0 /* 8.5  */,  0 /* 9.0  */,  0 /* 9.5  */,
+         0 /* 10.0 */,  0 /* 10.5 */,  0 /* 11.0 */,  0 /* 11.5 */,  0 /* 12.0 */,
+         1 /* 12.5 */,  1 /* 13.0 */,  1 /* 13.5 */,  1 /* 14.0 */,  0 /* 14.5 */,
+         0 /* 15.0 */, -1 /* 15.5 */, -1 /* 16.0 */, -1 /* 16.5 */, -1 /* 17.0 */,
+        -1 /* 17.5 */,  0 /* 18.0 */,  0 /* 18.5 */,  0 /* 19.0 */,  0 /* 19.5 */,
+         0 /* 20.0 */,  0 /* 20.5 */,  0 /* 21.0 */,  0 /* 21.5 */,  0 /* 22.0 */,
+         1 /* 22.5 */,  1 /* 23.0 */,  1 /* 23.5 */,  1 /* 24.0 */,  0 /* 24.5 */,
+         0 /* 25.0 */, -1 /* 25.5 */, -1 /* 26.0 */, -1 /* 26.5 */, -1 /* 27.0 */,
+        -1 /* 27.5 */,  0 /* 28.0 */,  0 /* 28.5 */,  0 /* 29.0 */,  0 /* 29.5 */,
+         0 /* 30.0 */,  0 /* 30.5 */,  0 /* 31.0 */,  0 /* 31.5 */,  0 /* 32.0 */,
+         1 /* 32.5 */,  1 /* 33.0 */,  1 /* 33.5 */,  1 /* 34.0 */,  0 /* 34.5 */,
+         0 /* 35.0 */, -1 /* 35.5 */, -1 /* 36.0 */, -1 /* 36.5 */, -1 /* 37.0 */,
+        -1 /* 37.5 */,  0 /* 38.0 */,  0 /* 38.5 */,  0 /* 39.0 */,  0 /* 39.5 */,
+         0 /* 40.0 */
+    };
+
+public:
+    // Convert from Fahrenheit to LG-Celsius (using the LG-compatible conversion).
+    static float fahrenheit_to_lgcelsius(float temp) {
+        int temp_int = int(round(temp));
+        if (temp_int < 32 || temp_int > 104) {
+            return esphome::fahrenheit_to_celsius(temp);
+        }
+        int8_t val = FahToLGCel[temp_int - 32];
+        return float(val / 2) + ((val & 1) ? 0.5f : 0.0f);
+    }
+    // Convert an LG-Celsius value to Celsius. This is done to ensure the LG unit and HA agree
+    // on the value in Fahrenheit. For example, the unit sends 78F as 26C (LG Celsius), but HA
+    // would convert this to 78.8F => 79F. To work around this, we adjust 26C to 25.5C because
+    // this maps to 78F in HA.
+    static float lgcelsius_to_celsius(float temp) {
+        int index = int(temp * 2);
+        if (index < 0 || index >= sizeof(LGCelToCelAdjustment)) {
+            return temp;
+        }
+        int8_t adjustment = LGCelToCelAdjustment[index];
+        if (adjustment == -1) {
+            return temp - 0.5;
+        }
+        if (adjustment == 1) {
+            return temp + 0.5;
+        }
+        return temp;
+    }
+    static float celsius_to_lgcelsius(float temp) {
+        float fahrenheit = esphome::celsius_to_fahrenheit(temp);
+        return fahrenheit_to_lgcelsius(fahrenheit);
+    }
+};
+constexpr int8_t TempConversion::FahToLGCel[];
+constexpr int8_t TempConversion::LGCelToCelAdjustment[];
+
 class LgController final : public climate::Climate, public Component {
     static constexpr size_t MsgLen = 13;
     static constexpr int RxPin = 26; // Keep in sync with rx_pin in base.yaml.
@@ -96,6 +184,8 @@ class LgController final : public climate::Climate, public Component {
         uint8_t capabilities_message[13] = {};
     };
     NVSStorage nvs_storage_;
+
+    const bool fahrenheit_;
 
     // Whether a message came from the HVAC unit, a master controller, or a slave controller.
     enum class MessageSender : uint8_t { Unit, Master, Slave };
@@ -197,8 +287,8 @@ class LgController final : public climate::Climate, public Component {
         supported_traits_.set_supports_action(false);
         supported_traits_.set_visual_min_temperature(MIN_TEMP_SETPOINT);
         supported_traits_.set_visual_max_temperature(MAX_TEMP_SETPOINT);
-        supported_traits_.set_visual_current_temperature_step(0.5);
-        supported_traits_.set_visual_target_temperature_step(0.5);
+        supported_traits_.set_visual_current_temperature_step(fahrenheit_ ? 1 : 0.5);
+        supported_traits_.set_visual_target_temperature_step(fahrenheit_ ? 1 : 0.5);
 
         // Only override defaults if the capabilities are known
         if (nvs_storage_.capabilities_message[0] != 0) {
@@ -264,6 +354,7 @@ class LgController final : public climate::Climate, public Component {
             fan_speed_low_->set_internal(true);
             fan_speed_medium_->set_internal(true);
             fan_speed_high_->set_internal(true);
+            overheating_select_->set_internal(true);
 
             if (!slave_) {
                 if (parse_capability(LgCapability::HAS_ESP_VALUE_SETTING)) {
@@ -280,15 +371,15 @@ class LgController final : public climate::Climate, public Component {
                         fan_speed_high_->set_internal(false);
                     }
                 }
-                overheating_select_->set_internal(!parse_capability(LgCapability::OVERHEATING_SETTING));
+                if (parse_capability(LgCapability::OVERHEATING_SETTING)) {
+                    overheating_select_->set_internal(false);
+                }
             }
             purifier_.set_internal(!parse_capability(LgCapability::PURIFIER));
         }
 
-        if (slave_) {
-            internal_thermistor_.set_internal(true);
-            sleep_timer_->set_internal(true);
-        }
+        internal_thermistor_.set_internal(slave_);
+        sleep_timer_->set_internal(slave_);
     }
 
 public:
@@ -304,6 +395,7 @@ public:
                  esphome::template_::TemplateNumber* fan_speed_medium,
                  esphome::template_::TemplateNumber* fan_speed_high,
                  esphome::template_::TemplateNumber* sleep_timer,
+                 bool fahrenheit,
                  bool is_slave_controller
                  )
       : serial_(serial),
@@ -320,6 +412,7 @@ public:
         sleep_timer_(sleep_timer),
         purifier_(this),
         internal_thermistor_(this),
+        fahrenheit_(fahrenheit),
         slave_(is_slave_controller)
     {
     }
@@ -510,6 +603,9 @@ private:
         if (isnan(temp) || temp == 0) {
             return {};
         }
+        if (fahrenheit_) {
+            temp = TempConversion::fahrenheit_to_lgcelsius(temp);
+        }
         if (temp < 11) {
             return 11;
         }
@@ -653,6 +749,9 @@ private:
         send_buf_[4] = last_recv_status_[4];
 
         float target = this->target_temperature;
+        if (fahrenheit_) {
+            target = TempConversion::celsius_to_lgcelsius(target);
+        }
         if (target < MIN_TEMP_SETPOINT) {
             target = MIN_TEMP_SETPOINT;
         } else if (target > MAX_TEMP_SETPOINT) {
@@ -683,13 +782,19 @@ private:
         send_buf_[6] = (thermistor << 4) | ((uint8_t(target) - 15) & 0xf);
         send_buf_[7] = (last_recv_status_[7] & 0xC0) | uint8_t((temp - 10) * 2);
 
-        // Bytes 8-9. Initialize to 0 to not echo back timer settings set by the AC.
+        // Bytes 8-10. Initialize bytes 8-9 to 0 to not echo back timer settings set by the AC.
         send_buf_[8] = 0;
         send_buf_[9] = 0;
+        send_buf_[10] = last_recv_status_[10];
 
         if (is_initializing_) {
             // Request settings when controller turns on.
             send_buf_[8] |= 0x40;
+            // Set bit 0x80 of byte 10 to use byte 9 for the Fahrenheit setting flag (0x40).
+            if (fahrenheit_) {
+                send_buf_[9] |= 0x40;
+            }
+            send_buf_[10] = 0x80;
         } else if (optional<uint32_t> minutes = get_sleep_timer_minutes()) {
             // Set sleep timer.
             // Byte 8 stores the kind (0x38) and high bits of number of minutes (0x7).
@@ -700,8 +805,7 @@ private:
             send_buf_[9] = *minutes & 0xff;
         }
 
-        // Bytes 10-11.
-        send_buf_[10] = last_recv_status_[10];
+        // Byte 11.
         send_buf_[11] = last_recv_status_[11];
 
         // Byte 12.
@@ -716,9 +820,15 @@ private:
 
         // If we sent an updated temperature to the AC, update temperature in HA too.
         // Slave controller temperature sensor is ignored.
-        if (!slave_ && thermistor == ThermistorSetting::Controller && this->current_temperature != temp) {
-            this->current_temperature = temp;
-            publish_state();
+        if (!slave_ && thermistor == ThermistorSetting::Controller) {
+            float ha_temp = temp;
+            if (fahrenheit_) {
+                ha_temp = TempConversion::lgcelsius_to_celsius(ha_temp);
+            }
+            if (this->current_temperature != ha_temp) {
+                this->current_temperature = ha_temp;
+                publish_state();
+            }
         }
     }
 
@@ -905,6 +1015,9 @@ private:
         }
         if (read_temp) {
             float room_temp = float(buffer[7] & 0x3F) / 2 + 10;
+            if (fahrenheit_) {
+                room_temp = TempConversion::lgcelsius_to_celsius(room_temp);
+            }
             if (this->current_temperature != room_temp) {
                 this->current_temperature = room_temp;
                 publish_state();
@@ -991,10 +1104,14 @@ private:
             set_swing_mode(climate::CLIMATE_SWING_OFF);
         }
 
-        this->target_temperature = float((buffer[6] & 0xf) + 15);
+        float target = float((buffer[6] & 0xf) + 15);
         if (buffer[5] & 0x1) {
-            this->target_temperature += 0.5;
+            target += 0.5;
         }
+        if (fahrenheit_) {
+            target = TempConversion::lgcelsius_to_celsius(target);
+        }
+        this->target_temperature = target;
 
         active_reservation_ = buffer[3] & 0x10;
 

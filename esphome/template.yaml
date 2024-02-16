@@ -7,6 +7,8 @@ substitutions:
   devicename: "LG Living Room" # XXX
   # The input temperature sensor in HA.
   temperature_sensor_entity_id: sensor.my_sensor # XXX
+  # Set to "true" if the temperature sensor and Home Assistant use Fahrenheit instead of Celsius.
+  fahrenheit: "false" # XXX
   # If multiple controllers are connected to a single indoor unit, only one of them should be
   # configured as "master controller". Slave mode is a new and experimental feature for this
   # ESPHome controller and might not work well.

@@ -57,6 +57,7 @@ Features currently available in Home Assistant:
 * Input field for sleep timer from 0 to 420 minutes (0 turns off the sleep timer).
 * Input fields for installer fan speed setting (to fine-tune fan speeds, 0-255 with 0 being factory default).
 * Select option for installer setting 15 from 0-4 (to change over heating behavior in heating mode).
+* YAML options for Fahrenheit mode and 'slave' controller mode.
 * Detects & exposes only supported capabilities for the connected indoor unit.
 
 The LG ThinQ app and wireless remote can still be used to change these settings and other settings. They'll be synchronized with this controller.

@@ -204,7 +204,7 @@ climate:
                                 id(overheating),
                                 id(fan_speed_slow), id(fan_speed_low), id(fan_speed_medium), id(fan_speed_high),
                                 id(sleep_timer),
-                                ${is_slave_controller}
+                                ${fahrenheit}, ${is_slave_controller}
                               );
       App.register_component(controller);
       return {controller};
