@@ -97,7 +97,7 @@ The controller and AC unit will send this when a setting changes. The AC unit wi
 |    |             | Or for duct units with > 4 zones: zone 5 on |
 |    | `00X0_0000` | Unknown |
 |    | `0X00_0000` | Set by unit when initializing? |
-|    | `X000_0000` | Set by controller when initializing, or for reservation settings (see next section) |
+|    | `X000_0000` | Set by controller when initializing or for reservation/Fahrenheit settings (see next sections) |
 | 11 | `XXXX_XXXX` | Error value, 0 = no error |
 | 12 | `XXXX_XXXX` | Checksum |
 
@@ -119,6 +119,11 @@ The turn-off/turn-on reservations are set based on the target time, but the cont
 To disable a single reservation or timer, the number of minutes can be set to 0. Reservation type 4 will clear all reservations.
 
 Because multiple reservation types can be active at the same time, the controller also has a way to disable individual ones: byte 10 has bit `0x80` set and then byte 9 has a single bit for each of the following if they're enabled: turn-off reservation (`0x4`), turn-on reservation (`0x8`), sleep timer (`0x10`), and simple timer (`0x20`). My AC unit doesn't send messages like this, it just uses the reservation type with number of minutes > 0 to enable a reservation or timer, and 0 minutes to disable it.
+
+### Fahrenheit mode
+Temperature values sent/received are always in Celsius. To switch the unit to Fahrenheit (this affects the displayed temperature), the controller can temporarily set bit `0x80` of byte 10 and then set byte 9 to `0x40`. (Note that this is similar to the mechanism in the previous paragraph.)
+
+Unfortunately LG uses a Fahrenheit/Celsius mapping that's different from what you'd expect. For example, 78°F is ~25.5°C, but LG controllers and units will instead send 26°C for 78°F (even though 26°C is more like 79°F). A value of 25.5°C is treated by the AC as 77°F. The ESPHome controller has code to convert between Fahrenheit, Celsius and "LG-Celsius" in Fahrenheit mode to account for these differences. See [issue #27](https://github.com/JanM321/esphome-lg-controller/issues/27) for more information on this.
 
 ## Type 1: Capabilities message (0xC9)
 The AC sends this to the controller when it's powered on to tell it which features are supported.
