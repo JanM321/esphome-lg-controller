@@ -22,6 +22,7 @@ This ESPHome controller has been used with the following units:
 * LG TC07GQR and LG PC12SQ units ([source](https://github.com/JanM321/esphome-lg-controller/issues/25#issuecomment-1911668782)).
 * LG B55AWYU3G5 indoor unit and LG ABUW55G7SB0 outdoor unit, 17.1 kW Ducted ([source](https://github.com/JanM321/esphome-lg-controller/issues/30)).
 * LG LMN079HVT and LG LSN090HSV5 indoor units with LG LMU361HHV outdoor unit ([source](https://github.com/JanM321/esphome-lg-controller/issues/36)).
+* LG DC18RQ.NSK Deluxe unit ([source](https://github.com/JanM321/esphome-lg-controller/issues/41#issuecomment-2009415493))
 
 If your indoor unit supports the LG PREMTB100 and/or LG PREMTA200 controller, it will very likely be compatible. Please let us know if it works so we can add it to this list :)
 
