@@ -214,7 +214,10 @@ Type 0xA messages store more advanced settings and are only sent when the AC is 
 | 4 | `XXXX_XXXX` | Fan speed for Medium fan (see installer setting 3)<br>0: default |
 | 5 | `XXXX_XXXX` | Fan speed for High fan (see installer setting 3)<br>0: default |
 | 6 | `XXXX_XXXX` | Fan speed for Power fan (see installer setting 3)<br>0: default |
-| 7-8 | `0XXX_0XXX` | Vertical vane positions from 0 to 6 (example: `0x5555` for 4 vanes set to position 5)<br>0: default position<br>1: up<br>2-5: ...<br>6: down | 
+| 7 | `0000_XXXX` | Vertical vane position for vane 1<br>0: default for operation mode<br>1: up<br>2-5: ...<br>6: down  |
+|   | `XXXX_0000` | Vertical vane position for vane 2 |
+| 8 | `0000_XXXX` | Vertical vane position for vane 3 |
+|   | `XXXX_0000` | Vertical vane position for vane 4 |
 | 9 | `0000_0XXX` | Auto change temperature setting 1-7 |
 |   | `X000_0000` | Auxiliary heater, installer setting 25<br>0: not installed<br>1: installed |
 | 10 | `XXXX_0000` | Maximum setpoint value, stored as `temperature - 15`. Typically `0xf` => 30°C. |
@@ -279,15 +282,26 @@ Bytes 3-5 contain pipe temperature values. A higher value indicates a lower temp
 
 ## Type 4: More status information (0xAC/0xCC)
 The wall controller sends these regularly and apparently some AC units do this too, but I've never seen this from my unit.
-Example from my notes, but I haven't checked if this is accurate:
-```
-CC.00.09.64.91.29...
-byte 2 (0x9): filter time (256 + 2048 = 2304)
-bytes 3-5: energy usage 06:49, 12.9 kWh
-```
-Byte 9 is the room temperature (from controller) or unit temperature (from AC). Stored as `temperature * 2` (example: 0x2B => 21.5C). PREMTB100 sends this but PREMTB001 always sends 0. Unclear how this differs from room temperature in A8.
 
-Byte 11 controls some functions such as himalaya cool (0x1), mosquito away (0x2), and comfort cooling (0x4).
+| Byte | Bits | Description |
+| --- | --- | --- |
+| 0 | `XXXX_XXXX` | Message type, `0xAC/0xCC/2C` |
+| 1 | `XXXX_XXXX` | Filter time left in hours (low bits). Combined with value in byte 2.<br>Example: `CC.AB.01 => 0x1AB => 427 hours left` |
+| 2 | `0000_XXXX` | Filter time left in hours (high bits) |
+|   | `0X00_0000` | Occupancy status |
+|   | `X000_0000` | Dual setpoint mode |
+| 3-5 | `XXXX_XXXX` | Power Consumption in kWh. Example: `64.91.29 => 64912.9 kWh` |
+| 6 | `0XXX_XXXX` | Setpoint in degrees C, integer part. Used for the high setpoint in dual setpoint mode |
+| 7 | `0XXX_XXXX` | Setpoint in degrees C, integer part. Used for the low setpoint in dual setpoint mode |
+|   | `X000_0000` | Set if settings were changed. This is similar to the bit in byte 1 for Type 0 status messages |
+| 8 | `0000_XXXX` | Fractional part for setpoint in byte 7 (for example `5 => 0.5C`) |
+|   | `XXXX_0000` | Fractional part for setpoint in byte 6 |
+| 9 | `XXXX_XXXX` | Room temperature value (from controller) or unit temperature (from AC). Stored as `temperature * 2` (example: `0x2B => 21.5C`). PREMTB100 sends this but PREMTB001 always sends 0. |
+| 10 | `XXXX_XXXX` | Deadband for dual setpoint mode (example: `0x25 => 2.5C`) |
+| 11 | `0000_000X` | Himalaya Cooling |
+|    | `0000_00X0` | Mosquito Away |
+|    | `0000_0X00` | Comfort Cooling |
+| 12 | `XXXX_XXXX` | Checksum |
 
 ## Type 5: Advanced settings (0xAD/0xCD)
 My unit sends this after power on with all zeroes. The wall controller uses it for installer settings.
