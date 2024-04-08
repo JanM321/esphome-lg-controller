@@ -22,10 +22,11 @@ This ESPHome controller has been used with the following units:
 * LG TC07GQR and LG PC12SQ units ([source](https://github.com/JanM321/esphome-lg-controller/issues/25#issuecomment-1911668782)).
 * LG B55AWYU3G5 indoor unit and LG ABUW55G7SB0 outdoor unit, 17.1 kW Ducted ([source](https://github.com/JanM321/esphome-lg-controller/issues/30)).
 * LG LMN079HVT and LG LSN090HSV5 indoor units with LG LMU361HHV outdoor unit ([source](https://github.com/JanM321/esphome-lg-controller/issues/36)).
-* LG DC18RQ.NSK Deluxe unit ([source](https://github.com/JanM321/esphome-lg-controller/issues/41#issuecomment-2009415493))
-* LG S09EQ.NSJ indoor unit with S09EQ.UA3 outdoor unit ([source](https://github.com/JanM321/esphome-lg-controller/discussions/42))
+* LG DC18RQ.NSK Deluxe unit ([source](https://github.com/JanM321/esphome-lg-controller/issues/41#issuecomment-2009415493)).
+* LG S09EQ.NSJ indoor unit with LG S09EQ.UA3 outdoor unit ([source](https://github.com/JanM321/esphome-lg-controller/discussions/42)).
+* LG MT09R NU1 indoor ceiling cassette with LG MU4R25 U21 outdoor unit ([source](https://github.com/JanM321/esphome-lg-controller/discussions/47)).
 
-If your indoor unit supports the LG PREMTB100 and/or LG PREMTA200 controller, it will very likely be compatible. Please let us know if it works so we can add it to this list :)
+If your indoor unit supports the LG PREMTB100 and/or LG PREMTA200 controller, it will very likely be compatible. Please [let us know](https://github.com/JanM321/esphome-lg-controller/discussions) if it works so we can add it to this list :)
 
 ### Multiple controllers
 It's possible to connect multiple controllers to a single indoor unit, but one of them must be set as 'master' and the others as 'slave'. Since February 2024, this ESPHome controller has experimental support for this. I'm not using this myself, so there might be some issues with this (please report them).
@@ -112,7 +113,8 @@ I used the following steps to build the ESPHome firmware, flash it on the device
 If you just want to connect to the device to view the debug logs, use `esphome logs lg-livingroom.yaml`.
 
 # Tips
-It's possible to use a Home Assistant template sensor as room temperature sensor. I'm [using this](https://gist.github.com/JanM321/b550285713f20231386509b2c227f0b8) to work around some issues with my LG Multi F unit in heating mode.
+* [Issue #43](https://github.com/JanM321/esphome-lg-controller/issues/43) has some information on temperature sensors that work well for this.
+* It's possible to use a Home Assistant template sensor as room temperature sensor. I'm [using this](https://gist.github.com/JanM321/b550285713f20231386509b2c227f0b8) to work around some issues with my LG Multi F unit in heating mode.
 
 # License
 This project is licensed under the 0BSD License. See the LICENSE file for details.
