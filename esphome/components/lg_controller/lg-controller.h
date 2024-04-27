@@ -1,27 +1,43 @@
+#pragma once
+
 #include "esphome.h"
+#include "esphome/components/uart/uart.h"
 
 static const char* const TAG = "lg-controller";
 
 #define MIN_TEMP_SETPOINT 16
 #define MAX_TEMP_SETPOINT 30
 
-class LgController;
+namespace esphome::lg_controller {
 
-// Custom switch. Notifies the controller when state changes in HA.
-class LgSwitch final : public Switch {
-  LgController* controller_;
-
- public:
-  explicit LgSwitch(LgController* controller) : controller_(controller) {}
-
-  void write_state(bool state) override;
-
-  void restore_and_set_mode(SwitchRestoreMode mode) {
-    set_restore_mode(mode);
-    if (auto state = get_initial_state_with_restore_mode()) {
-        write_state(*state);
+class LgSwitch final : public switch_::Switch {
+    void write_state(bool value) override {
+        publish_state(value);
     }
-  }
+
+public:
+    void restore_and_set_mode(switch_::SwitchRestoreMode mode) {
+        set_restore_mode(mode);
+        if (auto state = get_initial_state_with_restore_mode()) {
+            write_state(*state);
+        }
+    }
+};
+
+class LgSelect final : public select::Select {
+    void control(const std::string& value) override {
+        if (this->state != value) {
+            this->publish_state(value); 
+        }
+    }
+};
+
+class LgNumber final : public number::Number {
+    void control(float value) override {
+        if (this->state != value) {
+            this->publish_state(value); 
+        }
+    }
 };
 
 // The LG protocol always uses Celsius. The HA/ESPHome climate component internally
@@ -112,38 +128,37 @@ public:
 constexpr int8_t TempConversion::FahToLGCel[];
 constexpr int8_t TempConversion::LGCelToCelAdjustment[];
 
-class LgController final : public climate::Climate, public Component {
+class LgController final : public climate::Climate, public uart::UARTDevice, public Component {
     static constexpr size_t MsgLen = 13;
     static constexpr int RxPin = 26; // Keep in sync with rx_pin in base.yaml.
 
-    climate::ClimateTraits supported_traits_;
+    climate::ClimateTraits supported_traits_{};
 
-    esphome::uart::UARTComponent* serial_;
-    esphome::sensor::Sensor* temperature_sensor_;
-    esphome::template_::TemplateSelect* vane_select_1_;
-    esphome::template_::TemplateSelect* vane_select_2_;
-    esphome::template_::TemplateSelect* vane_select_3_;
-    esphome::template_::TemplateSelect* vane_select_4_;
-    esphome::template_::TemplateSelect* overheating_select_;
+    esphome::sensor::Sensor& temperature_sensor_;
+    LgSelect& vane_select_1_;
+    LgSelect& vane_select_2_;
+    LgSelect& vane_select_3_;
+    LgSelect& vane_select_4_;
+    LgSelect& overheating_select_;
 
-    esphome::template_::TemplateNumber* fan_speed_slow_;
-    esphome::template_::TemplateNumber* fan_speed_low_;
-    esphome::template_::TemplateNumber* fan_speed_medium_;
-    esphome::template_::TemplateNumber* fan_speed_high_;
+    LgNumber& fan_speed_slow_;
+    LgNumber& fan_speed_low_;
+    LgNumber& fan_speed_medium_;
+    LgNumber& fan_speed_high_;
 
-    esphome::template_::TemplateNumber* sleep_timer_;
+    LgNumber& sleep_timer_;
 
-    esphome::sensor::Sensor error_code_;
-    esphome::sensor::Sensor pipe_temp_in_;
-    esphome::sensor::Sensor pipe_temp_mid_;
-    esphome::sensor::Sensor pipe_temp_out_;
-    esphome::binary_sensor::BinarySensor defrost_;
-    esphome::binary_sensor::BinarySensor preheat_;
-    esphome::binary_sensor::BinarySensor outdoor_;
+    esphome::sensor::Sensor& error_code_;
+    esphome::sensor::Sensor& pipe_temp_in_;
+    esphome::sensor::Sensor& pipe_temp_mid_;
+    esphome::sensor::Sensor& pipe_temp_out_;
+    esphome::binary_sensor::BinarySensor& defrost_;
+    esphome::binary_sensor::BinarySensor& preheat_;
+    esphome::binary_sensor::BinarySensor& outdoor_;
     uint32_t last_outdoor_change_millis_ = 0;
 
-    LgSwitch purifier_;
-    LgSwitch internal_thermistor_;
+    LgSwitch& purifier_;
+    LgSwitch& internal_thermistor_;
 
     uint8_t recv_buf_[MsgLen] = {};
     uint32_t recv_buf_len_ = 0;
@@ -331,90 +346,136 @@ class LgController final : public climate::Climate, public Component {
 
 
             // Disable unsupported entities
-            vane_select_1_->set_internal(true);
-            vane_select_2_->set_internal(true);
-            vane_select_3_->set_internal(true);
-            vane_select_4_->set_internal(true);
+            vane_select_1_.set_internal(true);
+            vane_select_2_.set_internal(true);
+            vane_select_3_.set_internal(true);
+            vane_select_4_.set_internal(true);
 
             if (parse_capability(LgCapability::HAS_ONE_VANE)) {
-                vane_select_1_->set_internal(false);
+                vane_select_1_.set_internal(false);
             }
             else if (parse_capability(LgCapability::HAS_TWO_VANES)) {
-                vane_select_1_->set_internal(false);
-                vane_select_2_->set_internal(false);
+                vane_select_1_.set_internal(false);
+                vane_select_2_.set_internal(false);
             }
             else if (parse_capability(LgCapability::HAS_FOUR_VANES)) {
-                vane_select_1_->set_internal(false);
-                vane_select_2_->set_internal(false);
-                vane_select_3_->set_internal(false);
-                vane_select_4_->set_internal(false);
+                vane_select_1_.set_internal(false);
+                vane_select_2_.set_internal(false);
+                vane_select_3_.set_internal(false);
+                vane_select_4_.set_internal(false);
             }
 
-            fan_speed_slow_->set_internal(true);
-            fan_speed_low_->set_internal(true);
-            fan_speed_medium_->set_internal(true);
-            fan_speed_high_->set_internal(true);
-            overheating_select_->set_internal(true);
+            fan_speed_slow_.set_internal(true);
+            fan_speed_low_.set_internal(true);
+            fan_speed_medium_.set_internal(true);
+            fan_speed_high_.set_internal(true);
+            overheating_select_.set_internal(true);
 
             if (!slave_) {
                 if (parse_capability(LgCapability::HAS_ESP_VALUE_SETTING)) {
                     if (parse_capability(LgCapability::FAN_SLOW)) {
-                        fan_speed_slow_->set_internal(false);
+                        fan_speed_slow_.set_internal(false);
                     }
                     if (parse_capability(LgCapability::FAN_LOW)) {
-                        fan_speed_low_->set_internal(false);
+                        fan_speed_low_.set_internal(false);
                     }
                     if (parse_capability(LgCapability::FAN_MEDIUM)) {
-                        fan_speed_medium_->set_internal(false);
+                        fan_speed_medium_.set_internal(false);
                     }
                     if (parse_capability(LgCapability::FAN_HIGH)) {
-                        fan_speed_high_->set_internal(false);
+                        fan_speed_high_.set_internal(false);
                     }
                 }
                 if (parse_capability(LgCapability::OVERHEATING_SETTING)) {
-                    overheating_select_->set_internal(false);
+                    overheating_select_.set_internal(false);
                 }
             }
             purifier_.set_internal(!parse_capability(LgCapability::PURIFIER));
         }
 
         internal_thermistor_.set_internal(slave_);
-        sleep_timer_->set_internal(slave_);
+        sleep_timer_.set_internal(slave_);
     }
 
 public:
-    LgController(esphome::uart::UARTComponent* serial,
-                 esphome::sensor::Sensor* temperature_sensor,
-                 esphome::template_::TemplateSelect* vane_select_1,
-                 esphome::template_::TemplateSelect* vane_select_2,
-                 esphome::template_::TemplateSelect* vane_select_3,
-                 esphome::template_::TemplateSelect* vane_select_4,
-                 esphome::template_::TemplateSelect* overheating_select,
-                 esphome::template_::TemplateNumber* fan_speed_slow,
-                 esphome::template_::TemplateNumber* fan_speed_low,
-                 esphome::template_::TemplateNumber* fan_speed_medium,
-                 esphome::template_::TemplateNumber* fan_speed_high,
-                 esphome::template_::TemplateNumber* sleep_timer,
-                 bool fahrenheit,
-                 bool is_slave_controller
-                 )
-      : serial_(serial),
-        temperature_sensor_(temperature_sensor),
-        vane_select_1_(vane_select_1),
-        vane_select_2_(vane_select_2),
-        vane_select_3_(vane_select_3),
-        vane_select_4_(vane_select_4),
-        overheating_select_(overheating_select),
-        fan_speed_slow_(fan_speed_slow),
-        fan_speed_low_(fan_speed_low),
-        fan_speed_medium_(fan_speed_medium),
-        fan_speed_high_(fan_speed_high),
-        sleep_timer_(sleep_timer),
-        purifier_(this),
-        internal_thermistor_(this),
+    LgController(sensor::Sensor* temperature_sensor,
+                 LgSelect* vane_select_1,
+                 LgSelect* vane_select_2,
+                 LgSelect* vane_select_3,
+                 LgSelect* vane_select_4,
+                 LgSelect* overheating_select,
+                 LgNumber* fan_speed_slow,
+                 LgNumber* fan_speed_low,
+                 LgNumber* fan_speed_medium,
+                 LgNumber* fan_speed_high,
+                 LgNumber* sleep_timer,
+                 sensor::Sensor* error_code,
+                 sensor::Sensor* pipe_temp_in,
+                 sensor::Sensor* pipe_temp_mid,
+                 sensor::Sensor* pipe_temp_out,
+                 binary_sensor::BinarySensor* defrost,
+                 binary_sensor::BinarySensor* preheat,
+                 binary_sensor::BinarySensor* outdoor,
+                 LgSwitch* purifier,
+                 LgSwitch* internal_thermistor,
+                 bool fahrenheit, bool is_slave_controller)
+      : temperature_sensor_(*temperature_sensor),
+        vane_select_1_(*vane_select_1),
+        vane_select_2_(*vane_select_2),
+        vane_select_3_(*vane_select_3),
+        vane_select_4_(*vane_select_4),
+        overheating_select_(*overheating_select),
+        fan_speed_slow_(*fan_speed_slow),
+        fan_speed_low_(*fan_speed_low),
+        fan_speed_medium_(*fan_speed_medium),
+        fan_speed_high_(*fan_speed_high),
+        sleep_timer_(*sleep_timer),
+        error_code_(*error_code),
+        pipe_temp_in_(*pipe_temp_in),
+        pipe_temp_mid_(*pipe_temp_mid),
+        pipe_temp_out_(*pipe_temp_out),
+        defrost_(*defrost),
+        preheat_(*preheat),
+        outdoor_(*outdoor),
+        purifier_(*purifier),
+        internal_thermistor_(*internal_thermistor),
         fahrenheit_(fahrenheit),
         slave_(is_slave_controller)
     {
+        vane_select_1_.add_on_state_callback([this](std::string v, size_t index) {
+            set_vane_position(1, index);
+        });
+        vane_select_2_.add_on_state_callback([this](std::string v, size_t index) {
+            set_vane_position(2, index);
+        });
+        vane_select_3_.add_on_state_callback([this](std::string v, size_t index) {
+            set_vane_position(3, index);
+        });
+        vane_select_4_.add_on_state_callback([this](std::string v, size_t index) {
+            set_vane_position(4, index);
+        });
+        overheating_select_.add_on_state_callback([this](std::string v, size_t index) {
+            set_overheating(index);
+        });
+
+        fan_speed_slow_.add_on_state_callback([this](float v) {
+            set_fan_speed(0, v);
+        });
+        fan_speed_low_.add_on_state_callback([this](float v) {
+            set_fan_speed(1, v);
+        });
+        fan_speed_medium_.add_on_state_callback([this](float v) {
+            set_fan_speed(2, v);
+        });
+        fan_speed_high_.add_on_state_callback([this](float v) {
+            set_fan_speed(3, v);
+        });
+        sleep_timer_.add_on_state_callback([this](float v) {
+            set_sleep_timer(v);
+        });
+
+        purifier_.add_on_state_callback([this](bool) { set_changed(); });
+        internal_thermistor_.add_on_state_callback([this](bool) { set_changed(); });
     }
 
     float get_setup_priority() const override {
@@ -437,31 +498,16 @@ public:
             this->publish_state();
         }
 
-        error_code_.set_icon("mdi:alert-circle-outline");
-
-        pipe_temp_in_.set_icon("mdi:thermometer");
-        pipe_temp_in_.set_unit_of_measurement("°C");
-        pipe_temp_mid_.set_icon("mdi:thermometer");
-        pipe_temp_mid_.set_unit_of_measurement("°C");
-        pipe_temp_out_.set_icon("mdi:thermometer");
-        pipe_temp_out_.set_unit_of_measurement("°C");
-
-        defrost_.set_icon("mdi:snowflake-melt");
-        preheat_.set_icon("mdi:heat-wave");
-        outdoor_.set_icon("mdi:fan");
-        purifier_.set_icon("mdi:pine-tree");
-
-        internal_thermistor_.set_icon("mdi:thermometer");
         internal_thermistor_.restore_and_set_mode(esphome::switch_::SWITCH_RESTORE_DEFAULT_OFF);
 
+        sleep_timer_.publish_state(0);
 
         // Configure climate traits and entities based on the capabilities message (if available)
         configure_capabilities();
 
-
-        while (serial_->available() > 0) {
+        while (UARTDevice::available() > 0) {
             uint8_t b;
-            serial_->read_byte(&b);
+            UARTDevice::read_byte(&b);
         }
         set_changed();
 
@@ -493,6 +539,7 @@ public:
         return supported_traits_;
     }
 
+private:
     void set_changed() {
         pending_status_change_ = true;
     }
@@ -574,32 +621,8 @@ public:
         set_changed();
     }
 
-    // Note: sensors and switches returned here must match the names in base.yaml.
-    std::vector<Sensor*> get_sensors() {
-        return {
-            &error_code_,
-            &pipe_temp_in_,
-            &pipe_temp_mid_,
-            &pipe_temp_out_,
-        };
-    }
-    std::vector<BinarySensor*> get_binary_sensors() {
-        return {
-            &defrost_,
-            &preheat_,
-            &outdoor_,
-        };
-    }
-    std::vector<Switch*> get_switches() {
-        return {
-            &purifier_,
-            &internal_thermistor_,
-        };
-    }
-
-private:
     optional<float> get_room_temp() const {
-        float temp = temperature_sensor_->get_state();
+        float temp = temperature_sensor_.get_state();
         if (isnan(temp) || temp == 0) {
             return {};
         }
@@ -636,7 +659,7 @@ private:
         return (result & 0xff) ^ 0x55;
     }
 
-    void set_swing_mode(ClimateSwingMode mode) {
+    void set_swing_mode(climate::ClimateSwingMode mode) {
         if (this->swing_mode != mode) {
             // If vertical swing is off, send a 0xAA message to restore the vane position.
             if (mode == climate::CLIMATE_SWING_OFF || mode == climate::CLIMATE_SWING_HORIZONTAL) {
@@ -812,7 +835,7 @@ private:
         send_buf_[12] = calc_checksum(send_buf_);
 
         ESP_LOGD(TAG, "sending %s", format_hex_pretty(send_buf_, MsgLen).c_str());
-        serial_->write_array(send_buf_, MsgLen);
+        UARTDevice::write_array(send_buf_, MsgLen);
 
         pending_status_change_ = false;
         pending_send_ = PendingSendKind::Status;
@@ -859,7 +882,7 @@ private:
         send_buf_[12] = calc_checksum(send_buf_);
 
         ESP_LOGD(TAG, "sending %s", format_hex_pretty(send_buf_, MsgLen).c_str());
-        serial_->write_array(send_buf_, MsgLen);
+        UARTDevice::write_array(send_buf_, MsgLen);
 
         pending_type_a_settings_change_ = false;
         pending_send_ = PendingSendKind::TypeA;
@@ -894,7 +917,7 @@ private:
         send_buf_[12] = calc_checksum(send_buf_);
 
         ESP_LOGD(TAG, "sending %s", format_hex_pretty(send_buf_, MsgLen).c_str());
-        serial_->write_array(send_buf_, MsgLen);
+        UARTDevice::write_array(send_buf_, MsgLen);
 
         pending_type_b_settings_change_ = false;
         pending_send_ = PendingSendKind::TypeB;
@@ -1118,10 +1141,10 @@ private:
         // Set or clear sleep timer.
         if (!slave_) {
             if (sleep_timer_target_millis_.has_value() && !active_reservation_) {
-                sleep_timer_->publish_state(0);
+                sleep_timer_.publish_state(0);
             } else if (((buffer[8] >> 3) & 0x7) == 3) {
                 uint32_t minutes = (uint32_t(buffer[8] & 0x7) << 8) | buffer[9];
-                sleep_timer_->publish_state(minutes);
+                sleep_timer_.publish_state(minutes);
             }
         }
 
@@ -1176,7 +1199,7 @@ private:
         uint8_t vane1 = buffer[7] & 0x0F;
         if (vane1 <= 6) {
             vane_position_[0] = vane1;
-            vane_select_1_->publish_state(*vane_select_1_->at(vane1));
+            vane_select_1_.publish_state(*vane_select_1_.at(vane1));
         } else {
             ESP_LOGE(TAG, "Unexpected vane 1 position: %u", vane1);
         }
@@ -1185,7 +1208,7 @@ private:
         uint8_t vane2 = (buffer[7] >> 4) & 0x0F;
         if (vane2 <= 6) {
             vane_position_[1] = vane2;
-            vane_select_2_->publish_state(*vane_select_2_->at(vane2));
+            vane_select_2_.publish_state(*vane_select_2_.at(vane2));
         } else {
             ESP_LOGE(TAG, "Unexpected vane 2 position: %u", vane2);
         }
@@ -1194,7 +1217,7 @@ private:
         uint8_t vane3 = buffer[8] & 0x0F;
         if (vane3 <= 6) {
             vane_position_[2] = vane3;
-            vane_select_3_->publish_state(*vane_select_3_->at(vane3));
+            vane_select_3_.publish_state(*vane_select_3_.at(vane3));
         } else {
             ESP_LOGE(TAG, "Unexpected vane 3 position: %u", vane3);
         }
@@ -1203,7 +1226,7 @@ private:
         uint8_t vane4 = (buffer[8] >> 4) & 0x0F;
         if (vane4 <= 6) {
             vane_position_[3] = vane4;
-            vane_select_4_->publish_state(*vane_select_4_->at(vane4));
+            vane_select_4_.publish_state(*vane_select_4_.at(vane4));
         } else {
             ESP_LOGE(TAG, "Unexpected vane 4 position: %u", vane4);
         }
@@ -1211,19 +1234,19 @@ private:
         if (sender != MessageSender::Slave) {
             // Handle fan speed 0 (slow) change
             fan_speed_[0] = buffer[2];
-            fan_speed_slow_->publish_state(fan_speed_[0]);
+            fan_speed_slow_.publish_state(fan_speed_[0]);
 
             // Handle fan speed 1 (low) change
             fan_speed_[1] = buffer[3];
-            fan_speed_low_->publish_state(fan_speed_[1]);
+            fan_speed_low_.publish_state(fan_speed_[1]);
 
             // Handle fan speed 2 (medium) change
             fan_speed_[2] = buffer[4];
-            fan_speed_medium_->publish_state(fan_speed_[2]);
+            fan_speed_medium_.publish_state(fan_speed_[2]);
 
             // Handle fan speed 3 (high) change
             fan_speed_[3] = buffer[5];
-            fan_speed_high_->publish_state(fan_speed_[3]);
+            fan_speed_high_.publish_state(fan_speed_[3]);
         }
     }
 
@@ -1245,7 +1268,7 @@ private:
         uint8_t overheating = (buffer[2] >> 3) & 0b111;
         if (overheating <= 4) {
             overheating_ = overheating;
-            overheating_select_->publish_state(*overheating_select_->at(overheating));
+            overheating_select_.publish_state(*overheating_select_.at(overheating));
         } else {
             ESP_LOGE(TAG, "Unexpected overheating value: %u", overheating);
         }
@@ -1305,8 +1328,8 @@ private:
         ESP_LOGD(TAG, "update");
 
         bool had_error = false;
-        while (serial_->available() > 0) {
-            if (!serial_->read_byte(&recv_buf_[recv_buf_len_])) {
+        while (UARTDevice::available() > 0) {
+            if (!UARTDevice::read_byte(&recv_buf_[recv_buf_len_])) {
                 break;
             }
             last_recv_millis_ = millis();
@@ -1363,14 +1386,15 @@ private:
                 sleep_timer_target_millis_.reset();
                 active_reservation_= false;
                 ignore_sleep_timer_callback_ = true;
-                sleep_timer_->publish_state(0);
+                sleep_timer_.publish_state(0);
                 ignore_sleep_timer_callback_ = false;
                 this->mode = climate::CLIMATE_MODE_OFF;
                 set_changed();
+                publish_state();
             } else if (optional<uint32_t> minutes = get_sleep_timer_minutes()) {
-                if (sleep_timer_->state != *minutes) {
+                if (sleep_timer_.state != *minutes) {
                     ignore_sleep_timer_callback_ = true;
-                    sleep_timer_->publish_state(*minutes);
+                    sleep_timer_.publish_state(*minutes);
                     ignore_sleep_timer_callback_ = false;
                 }
             }
@@ -1386,7 +1410,7 @@ private:
         // approximately the same time and the message will hopefully be corrupt (and ignored)
         // anyway. Else the pending_send_/send_buf_ mechanism should catch it and we try again.
         //
-        // Note: using digitalRead is *much* better for this than using serial_ because that
+        // Note: using digitalRead is *much* better for this than using UARTDevice because that
         // interface has significant delays. It has to wait for a full byte to arrive and this
         // takes about 9-10 ms with our slow baud rate. There are also various buffers and
         // timeouts before incoming bytes reach us.
@@ -1396,7 +1420,7 @@ private:
         // collisions.
         auto check_can_send = [&]() -> bool {
             while (true) {
-                if (serial_->available() > 0 || digitalRead(RxPin) == LOW) {
+                if (UARTDevice::available() > 0 || digitalRead(RxPin) == LOW) {
                     ESP_LOGD(TAG, "line busy, not sending yet");
                     return false;
                 }
@@ -1438,7 +1462,4 @@ private:
     }
 };
 
-void LgSwitch::write_state(bool state) {
-    publish_state(state);
-    controller_->set_changed();
-}
+} // namespace esphome::lg_controller

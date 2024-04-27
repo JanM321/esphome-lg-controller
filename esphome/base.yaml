@@ -1,8 +1,6 @@
 esphome:
   name: ${deviceid}
   friendly_name: ${devicename}
-  includes:
-    - lg-controller.h
 
 esp32:
   board: esp32dev
@@ -16,198 +14,105 @@ uart:
     baud_rate: 104
 
 sensor:
-  - id: temperature_sensor
+  - id: temp_sensor
     platform: homeassistant
     internal: true
     entity_id: ${temperature_sensor_entity_id}
-  - platform: custom
-    lambda: |-
-      return ((LgController*)id(${deviceid}))->get_sensors();
-    sensors:
-      - name: Error Code
-      - name: Pipe Temperature In
-      - name: Pipe Temperature Mid
-      - name: Pipe Temperature Out
   - platform: uptime
     name: Uptime
 
-binary_sensor:
-  - platform: custom
-    lambda: |-
-      return ((LgController*)id(${deviceid}))->get_binary_sensors();
-    binary_sensors:
-      - name: Defrost
-      - name: Preheat
-      - name: Outdoor Unit
-
-switch:
-  - platform: custom
-    lambda: |-
-      return ((LgController*)id(${deviceid}))->get_switches();
-    switches:
-      - name: Air Purifier
-      - name: Internal Thermistor
-
-select:
-  - platform: template
-    name: Airflow 1 Up/Down
-    id: vane_position_1
-    optimistic: true
-    icon: mdi:arrow-up-down
-    options:
-      - "0 (Default)"
-      - "1 (Up)"
-      - "2"
-      - "3"
-      - "4"
-      - "5"
-      - "6 (Down)"
-    on_value:
-      - lambda: |-
-          ((LgController*)id(${deviceid}))->set_vane_position(1, i);
-  - platform: template
-    name: Airflow 2 Up/Down
-    id: vane_position_2
-    optimistic: true
-    icon: mdi:arrow-up-down
-    options:
-      - "0 (Default)"
-      - "1 (Up)"
-      - "2"
-      - "3"
-      - "4"
-      - "5"
-      - "6 (Down)"
-    on_value:
-      - lambda: |-
-          ((LgController*)id(${deviceid}))->set_vane_position(2, i);
-  - platform: template
-    name: Airflow 3 Up/Down
-    id: vane_position_3
-    optimistic: true
-    icon: mdi:arrow-up-down
-    options:
-      - "0 (Default)"
-      - "1 (Up)"
-      - "2"
-      - "3"
-      - "4"
-      - "5"
-      - "6 (Down)"
-    on_value:
-      - lambda: |-
-          ((LgController*)id(${deviceid}))->set_vane_position(3, i);
-  - platform: template
-    name: Airflow 4 Up/Down
-    id: vane_position_4
-    optimistic: true
-    icon: mdi:arrow-up-down
-    options:
-      - "0 (Default)"
-      - "1 (Up)"
-      - "2"
-      - "3"
-      - "4"
-      - "5"
-      - "6 (Down)"
-    on_value:
-      - lambda: |-
-          ((LgController*)id(${deviceid}))->set_vane_position(4, i);
-  - platform: template
-    name: Over Heating # Installer setting 15.
-    id: overheating
-    optimistic: true
-    icon: mdi:heating-coil
-    options:
-      - "0 (Default)"
-      - "1 (+4C/+6C)"
-      - "2 (+2C/+4C)"
-      - "3 (-1C/+1C)"
-      - "4 (-0.5C/+0.5C)"
-    on_value:
-      - lambda: |-
-          ((LgController*)id(${deviceid}))->set_overheating(i);
-
-number:
-  - platform: template
-    name: "Fan Speed Slow"
-    id: fan_speed_slow
-    optimistic: true
-    icon: mdi:fan-chevron-down
-    mode: box
-    min_value: 0
-    max_value: 255
-    step: 1
-    on_value:
-      then:
-        - lambda: |-
-            ((LgController*)id(${deviceid}))->set_fan_speed(0, x);    
-  - platform: template
-    name: "Fan Speed Low"
-    id: fan_speed_low
-    optimistic: true
-    icon: mdi:fan-speed-1
-    mode: box
-    min_value: 0
-    max_value: 255
-    step: 1
-    on_value:
-      then:
-        - lambda: |-
-            ((LgController*)id(${deviceid}))->set_fan_speed(1, x);    
-  - platform: template
-    name: "Fan Speed Medium"
-    id: fan_speed_medium
-    optimistic: true
-    icon: mdi:fan-speed-2
-    mode: box
-    min_value: 0
-    max_value: 255
-    step: 1
-    on_value:
-      then:
-        - lambda: |-
-            ((LgController*)id(${deviceid}))->set_fan_speed(2, x);    
-  - platform: template
-    name: "Fan Speed High"
-    id: fan_speed_high
-    optimistic: true
-    icon: mdi:fan-speed-3
-    mode: box
-    min_value: 0
-    max_value: 255
-    step: 1
-    on_value:
-      then:
-        - lambda: |-
-            ((LgController*)id(${deviceid}))->set_fan_speed(3, x);    
-  - platform: template
-    name: "Sleep Timer (minutes)"
-    id: sleep_timer
-    optimistic: true
-    icon: mdi:timer-outline
-    mode: box
-    min_value: 0
-    max_value: 420
-    initial_value: 0
-    step: 1
-    on_value:
-      then:
-        - lambda: |-
-            ((LgController*)id(${deviceid}))->set_sleep_timer(x);
+external_components:
+  - source: components
+    components: [lg_controller]
 
 climate:
-  - platform: custom
-    lambda: |-
-      auto* controller = new LgController(id(ac_serial), id(temperature_sensor), 
-                                id(vane_position_1), id(vane_position_2), id(vane_position_3), id(vane_position_4),
-                                id(overheating),
-                                id(fan_speed_slow), id(fan_speed_low), id(fan_speed_medium), id(fan_speed_high),
-                                id(sleep_timer),
-                                ${fahrenheit}, ${is_slave_controller}
-                              );
-      App.register_component(controller);
-      return {controller};
-    climates:
-      - name: ""
-        id: ${deviceid}
+  - platform: lg_controller
+    name: ""
+    id: ${deviceid}
+    fahrenheit: ${fahrenheit}
+    is_slave_controller: ${is_slave_controller}
+    temperature_sensor: temp_sensor
+    vane1:
+      name: Airflow 1 Up/Down
+      id: vane_position_1
+      icon: mdi:arrow-up-down
+    vane2:
+      name: Airflow 2 Up/Down
+      id: vane_position_2
+      icon: mdi:arrow-up-down
+    vane3:
+      name: Airflow 3 Up/Down
+      id: vane_position_3
+      icon: mdi:arrow-up-down
+    vane4:
+      name: Airflow 4 Up/Down
+      id: vane_position_4
+      icon: mdi:arrow-up-down
+    overheating:
+      name: Over Heating
+      id: overheating
+      icon: mdi:heating-coil
+    fan_speed_slow:
+      name: Fan Speed Slow
+      id: fan_speed_slow
+      icon: mdi:fan-chevron-down
+      mode: box
+    fan_speed_low:
+      name: Fan Speed Low
+      id: fan_speed_low
+      icon: mdi:fan-speed-1
+      mode: box
+    fan_speed_medium:
+      name: Fan Speed Medium
+      id: fan_speed_medium
+      icon: mdi:fan-speed-2
+      mode: box
+    fan_speed_high:
+      name: Fan Speed High
+      id: fan_speed_high
+      icon: mdi:fan-speed-3
+      mode: box
+    sleep_timer:
+      name: "Sleep Timer (minutes)"
+      id: sleep_timer
+      icon: mdi:timer-outline
+      mode: box
+    error_code:
+      name: Error Code
+      id: error_code
+      icon: mdi:alert-circle-outline
+    pipe_temp_in:
+      name: Pipe Temperature In
+      id: pipe_temperature_in
+      icon: mdi:thermometer
+      unit_of_measurement: "°C"
+    pipe_temp_mid:
+      name: Pipe Temperature Mid
+      id: pipe_temperature_mid
+      icon: mdi:thermometer
+      unit_of_measurement: "°C"
+    pipe_temp_out:
+      name: Pipe Temperature Out
+      id: pipe_temperature_out
+      icon: mdi:thermometer
+      unit_of_measurement: "°C"
+    defrost:
+      name: Defrost
+      id: defrost
+      icon: mdi:snowflake-melt
+    preheat:
+      name: Preheat
+      id: preheat
+      icon: mdi:heat-wave
+    outdoor:
+      name: Outdoor Unit
+      id: outdoor
+      icon: mdi:fan
+    purifier:
+      name: Air Purifier
+      id: air_purifier
+      icon: mdi:pine-tree
+    internal_thermistor:
+      name: Internal Thermistor
+      id: internal_thermistor
+      icon: mdi:thermometer
