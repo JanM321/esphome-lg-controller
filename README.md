@@ -25,6 +25,7 @@ This ESPHome controller has been used with the following units:
 * LG DC18RQ.NSK Deluxe unit ([source](https://github.com/JanM321/esphome-lg-controller/issues/41#issuecomment-2009415493)).
 * LG S09EQ.NSJ indoor unit with LG S09EQ.UA3 outdoor unit ([source](https://github.com/JanM321/esphome-lg-controller/discussions/42)).
 * LG MT09R NU1 indoor ceiling cassette with LG MU4R25 U21 outdoor unit ([source](https://github.com/JanM321/esphome-lg-controller/discussions/47)).
+* LG S09ET.NSK and LG S12ET.NSK indoor units ([source](https://github.com/JanM321/esphome-lg-controller/discussions/50) and [pictures](https://github.com/JanM321/esphome-lg-controller/discussions/51)).
 
 If your indoor unit supports the LG PREMTB100 and/or LG PREMTA200 controller, it will very likely be compatible. Please [let us know](https://github.com/JanM321/esphome-lg-controller/discussions) if it works so we can add it to this list :)
 
