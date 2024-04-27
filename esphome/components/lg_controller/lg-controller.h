@@ -5,10 +5,10 @@
 
 static const char* const TAG = "lg-controller";
 
-#define MIN_TEMP_SETPOINT 16
-#define MAX_TEMP_SETPOINT 30
-
 namespace esphome::lg_controller {
+
+static constexpr size_t MIN_TEMP_SETPOINT = 16;
+static constexpr size_t MAX_TEMP_SETPOINT = 30;
 
 class LgSwitch final : public switch_::Switch {
     void write_state(bool value) override {
@@ -207,72 +207,74 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
     // Set if this controller is configured as slave controller.
     const bool slave_;
 
-    enum LgCapability {
-    PURIFIER,
-    FAN_AUTO,
-    FAN_SLOW,
-    FAN_LOW,
-    FAN_LOW_MEDIUM,
-    FAN_MEDIUM,
-    FAN_MEDIUM_HIGH,
-    FAN_HIGH,
-    MODE_HEATING,
-    MODE_FAN,
-    MODE_AUTO,
-    MODE_DEHUMIDIFY,
-    HAS_ONE_VANE,
-    HAS_TWO_VANES,
-    HAS_FOUR_VANES,
-    VERTICAL_SWING,
-    HORIZONTAL_SWING,
-    HAS_ESP_VALUE_SETTING,
-    OVERHEATING_SETTING,
+    enum class LgCapability {
+        PURIFIER,
+        FAN_AUTO,
+        FAN_SLOW,
+        FAN_LOW,
+        FAN_LOW_MEDIUM,
+        FAN_MEDIUM,
+        FAN_MEDIUM_HIGH,
+        FAN_HIGH,
+        MODE_HEATING,
+        MODE_FAN,
+        MODE_AUTO,
+        MODE_DEHUMIDIFY,
+        HAS_ONE_VANE,
+        HAS_TWO_VANES,
+        HAS_FOUR_VANES,
+        VERTICAL_SWING,
+        HORIZONTAL_SWING,
+        HAS_ESP_VALUE_SETTING,
+        OVERHEATING_SETTING,
     };
 
     bool parse_capability(LgCapability capability) {
         switch (capability) {
-            case PURIFIER:
+            case LgCapability::PURIFIER:
                 return (nvs_storage_.capabilities_message[2] & 0x02) != 0;
-            case FAN_AUTO:
+            case LgCapability::FAN_AUTO:
                 return (nvs_storage_.capabilities_message[3] & 0x01) != 0;
-            case FAN_SLOW:
+            case LgCapability::FAN_SLOW:
                 return (nvs_storage_.capabilities_message[3] & 0x20) != 0;
-            case FAN_LOW:
+            case LgCapability::FAN_LOW:
                 return (nvs_storage_.capabilities_message[3] & 0x10) != 0;
-            case FAN_LOW_MEDIUM:
+            case LgCapability::FAN_LOW_MEDIUM:
                 return (nvs_storage_.capabilities_message[6] & 0x08) != 0;
-            case FAN_MEDIUM:
+            case LgCapability::FAN_MEDIUM:
                 return (nvs_storage_.capabilities_message[3] & 0x08) != 0;
-            case FAN_MEDIUM_HIGH:
+            case LgCapability::FAN_MEDIUM_HIGH:
                 return (nvs_storage_.capabilities_message[6] & 0x10) != 0;
-            case FAN_HIGH:
+            case LgCapability::FAN_HIGH:
                 return true;
-            case MODE_HEATING:
+            case LgCapability::MODE_HEATING:
                 return (nvs_storage_.capabilities_message[2] & 0x40) != 0;
-            case MODE_FAN:
+            case LgCapability::MODE_FAN:
                 return (nvs_storage_.capabilities_message[2] & 0x80) != 0;
-            case MODE_AUTO:
+            case LgCapability::MODE_AUTO:
                 return (nvs_storage_.capabilities_message[2] & 0x08) != 0;
-            case MODE_DEHUMIDIFY:
+            case LgCapability::MODE_DEHUMIDIFY:
                 return (nvs_storage_.capabilities_message[2] & 0x80) != 0;
-            case HAS_ONE_VANE:
+            case LgCapability::HAS_ONE_VANE:
                 return (nvs_storage_.capabilities_message[5] & 0x40) != 0;
-            case HAS_TWO_VANES:
+            case LgCapability::HAS_TWO_VANES:
                 return (nvs_storage_.capabilities_message[5] & 0x80) != 0;
-            case HAS_FOUR_VANES:
-                // actual flag is unknown, assume 4 vanes if neither 1 nor 2 vanes are supported
-                return (nvs_storage_.capabilities_message[5] & 0x40) == 0 && (nvs_storage_.capabilities_message[5] & 0x80) == 0;
-            case VERTICAL_SWING:
+            case LgCapability::HAS_FOUR_VANES:
+                // Actual flag is unknown, assume 4 vanes if neither 1 nor 2 vanes are supported
+                // and the vane control bit is set.
+                return (nvs_storage_.capabilities_message[5] & 0x40) == 0 &&
+                       (nvs_storage_.capabilities_message[5] & 0x80) == 0 &&
+                       (nvs_storage_.capabilities_message[4] & 0x01) != 0;
+            case LgCapability::VERTICAL_SWING:
                 return (nvs_storage_.capabilities_message[1] & 0x80) != 0;
-            case HORIZONTAL_SWING:
+            case LgCapability::HORIZONTAL_SWING:
                 return (nvs_storage_.capabilities_message[1] & 0x40) != 0;
-            case HAS_ESP_VALUE_SETTING:
+            case LgCapability::HAS_ESP_VALUE_SETTING:
                 return (nvs_storage_.capabilities_message[4] & 0x02) != 0;
-            case OVERHEATING_SETTING:
+            case LgCapability::OVERHEATING_SETTING:
                 return (nvs_storage_.capabilities_message[7] & 0x80) != 0;
-            default:
-                return false;
         }
+        return false;
     }
 
     void configure_capabilities() {
@@ -344,7 +346,6 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
                 swing_modes.insert(climate::CLIMATE_SWING_HORIZONTAL);
             supported_traits_.set_supported_swing_modes(swing_modes);
 
-
             // Disable unsupported entities
             vane_select_1_.set_internal(true);
             vane_select_2_.set_internal(true);
@@ -353,12 +354,10 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
 
             if (parse_capability(LgCapability::HAS_ONE_VANE)) {
                 vane_select_1_.set_internal(false);
-            }
-            else if (parse_capability(LgCapability::HAS_TWO_VANES)) {
+            } else if (parse_capability(LgCapability::HAS_TWO_VANES)) {
                 vane_select_1_.set_internal(false);
                 vane_select_2_.set_internal(false);
-            }
-            else if (parse_capability(LgCapability::HAS_FOUR_VANES)) {
+            } else if (parse_capability(LgCapability::HAS_FOUR_VANES)) {
                 vane_select_1_.set_internal(false);
                 vane_select_2_.set_internal(false);
                 vane_select_3_.set_internal(false);
