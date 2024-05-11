@@ -45,6 +45,7 @@ Features currently available in Home Assistant:
 * Airflow up/down setting from 0-6 for up to 4 vanes (vane angle, with 0 being default for operation mode).
 * Switch for external vs internal thermistor.
 * Switch for air purifier (plasma) on/off.
+* Switch and binary sensor for Auto Dry (also known as Auto Clean) feature. Used to dry indoor unit when it's turned off after cooling/dehumidifying.
 * Sensors for reporting outdoor unit on/off, defrost, preheat, error code.
 * Sensors for reporting in/mid/out pipe temperatures (if supported by unit).
 * Input field for sleep timer from 0 to 420 minutes (0 turns off the sleep timer).

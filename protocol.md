@@ -93,7 +93,7 @@ The controller and AC unit will send this when a setting changes. The AC unit wi
 |    |             | Or for duct units with > 4 zones: zone 7 on |
 |    | `0000_X000` | Active robot clean |
 |    |             | Or for duct units with > 4 zones: zone 6 on |
-|    | `000X_0000` | Active auto clean / auto dry |
+|    | `000X_0000` | Active auto clean (auto dry) |
 |    |             | Or for duct units with > 4 zones: zone 5 on |
 |    | `00X0_0000` | Unknown |
 |    | `0X00_0000` | Set by unit when initializing? |
@@ -158,7 +158,7 @@ The AC sends this to the controller when it's powered on to tell it which featur
 |   | `0000_X000` | Supports ceiling height installer setting |
 |   | `00XX_0000` | Unknown |
 |   | `0X00_0000` | Supports robot clean setting |
-|   | `X000_0000` | Supports auto clean setting |
+|   | `X000_0000` | Supports auto clean (auto dry) setting |
 | 5 | `0000_000X` | Supports energy saving sub function |
 |   | `0000_00X0` | Supports override master/slave installer setting |
 |   | `0000_0X00` | Supports auto change temperature setting |
@@ -225,7 +225,7 @@ Type 0xA messages store more advanced settings and are only sent when the AC is 
 | 11 | `0000_000X` | Dry contact mode installer setting 9<br>1: auto |
 |    | `0000_00X0` | Zone state installer setting 11<br>0: variable<br>1: fixed |
 |    | `0000_0X00` | Robot clean auto |
-|    | `0000_X000` | Auto clean/dry enabled |
+|    | `0000_X000` | Auto clean (auto dry) enabled |
 |    | `XXXX_0000` | Unknown |
 | 12 | `XXXX_XXXX` | Checksum |
 

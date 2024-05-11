@@ -40,9 +40,11 @@ CONF_PIPE_TEMP_OUT = "pipe_temp_out"
 CONF_DEFROST = "defrost"
 CONF_PREHEAT = "preheat"
 CONF_OUTDOOR = "outdoor"
+CONF_AUTO_DRY_ACTIVE = "auto_dry_active"
 
 CONF_PURIFIER = "purifier"
 CONF_INTERNAL_THERMISTOR = "internal_thermistor"
+CONF_AUTO_DRY = "auto_dry"
 
 VANE_OPTIONS = ["0 (Default)", "1 (Up)", "2", "3", "4", "5", "6 (Down)"]
 OVERHEATING_OPTIONS = ["0 (Default)", "1 (+4C/+6C)", "2 (+2C/+4C)", "3 (-1C/+1C)", "4 (-0.5C/+0.5C)"]
@@ -76,9 +78,11 @@ CONFIG_SCHEMA = climate.CLIMATE_SCHEMA.extend(
         cv.Required(CONF_DEFROST): binary_sensor.binary_sensor_schema(),
         cv.Required(CONF_PREHEAT): binary_sensor.binary_sensor_schema(),
         cv.Required(CONF_OUTDOOR): binary_sensor.binary_sensor_schema(),
+        cv.Required(CONF_AUTO_DRY_ACTIVE): binary_sensor.binary_sensor_schema(),
 
         cv.Required(CONF_PURIFIER): switch.switch_schema(LgSwitch),
         cv.Required(CONF_INTERNAL_THERMISTOR): switch.switch_schema(LgSwitch),
+        cv.Required(CONF_AUTO_DRY): switch.switch_schema(LgSwitch),
     }
 ).extend(cv.COMPONENT_SCHEMA).extend(uart.UART_DEVICE_SCHEMA)
 
@@ -105,17 +109,19 @@ async def to_code(config):
     defrost = await binary_sensor.new_binary_sensor(config[CONF_DEFROST])
     preheat = await binary_sensor.new_binary_sensor(config[CONF_PREHEAT])
     outdoor = await binary_sensor.new_binary_sensor(config[CONF_OUTDOOR])
+    auto_dry_active = await binary_sensor.new_binary_sensor(config[CONF_AUTO_DRY_ACTIVE])
 
     purifier = await switch.new_switch(config[CONF_PURIFIER])
     internal_thermistor = await switch.new_switch(config[CONF_INTERNAL_THERMISTOR])
+    auto_dry = await switch.new_switch(config[CONF_AUTO_DRY])
 
     var = cg.new_Pvariable(config[CONF_ID], temperature_sensor,
                            vane1, vane2, vane3, vane4, overheating,
                            fan_speed_slow, fan_speed_low, fan_speed_medium, fan_speed_high,
                            sleep_timer,
                            error_code, pipe_temp_in, pipe_temp_mid, pipe_temp_out,
-                           defrost, preheat, outdoor,
-                           purifier, internal_thermistor,
+                           defrost, preheat, outdoor, auto_dry_active,
+                           purifier, internal_thermistor, auto_dry,
                            config[CONF_FAHRENHEIT], config[CONF_IS_SLAVE_CONTROLLER])
     await climate.register_climate(var, config)
     await cg.register_component(var, config)

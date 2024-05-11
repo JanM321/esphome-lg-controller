@@ -155,10 +155,12 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
     esphome::binary_sensor::BinarySensor& defrost_;
     esphome::binary_sensor::BinarySensor& preheat_;
     esphome::binary_sensor::BinarySensor& outdoor_;
+    esphome::binary_sensor::BinarySensor& auto_dry_active_;
     uint32_t last_outdoor_change_millis_ = 0;
 
     LgSwitch& purifier_;
     LgSwitch& internal_thermistor_;
+    LgSwitch& auto_dry_;
 
     uint8_t recv_buf_[MsgLen] = {};
     uint32_t recv_buf_len_ = 0;
@@ -227,6 +229,7 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
         HORIZONTAL_SWING,
         HAS_ESP_VALUE_SETTING,
         OVERHEATING_SETTING,
+        AUTO_DRY,
     };
 
     bool parse_capability(LgCapability capability) {
@@ -273,6 +276,8 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
                 return (nvs_storage_.capabilities_message[4] & 0x02) != 0;
             case LgCapability::OVERHEATING_SETTING:
                 return (nvs_storage_.capabilities_message[7] & 0x80) != 0;
+            case LgCapability::AUTO_DRY:
+                return (nvs_storage_.capabilities_message[4] & 0x80) != 0;
         }
         return false;
     }
@@ -390,6 +395,8 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
                 }
             }
             purifier_.set_internal(!parse_capability(LgCapability::PURIFIER));
+            auto_dry_.set_internal(!parse_capability(LgCapability::AUTO_DRY));
+            auto_dry_active_.set_internal(!parse_capability(LgCapability::AUTO_DRY));
         }
 
         internal_thermistor_.set_internal(slave_);
@@ -415,8 +422,10 @@ public:
                  binary_sensor::BinarySensor* defrost,
                  binary_sensor::BinarySensor* preheat,
                  binary_sensor::BinarySensor* outdoor,
+                 binary_sensor::BinarySensor* auto_dry_active,
                  LgSwitch* purifier,
                  LgSwitch* internal_thermistor,
+                 LgSwitch* auto_dry,
                  bool fahrenheit, bool is_slave_controller)
       : temperature_sensor_(*temperature_sensor),
         vane_select_1_(*vane_select_1),
@@ -436,7 +445,9 @@ public:
         defrost_(*defrost),
         preheat_(*preheat),
         outdoor_(*outdoor),
+        auto_dry_active_(*auto_dry_active),
         purifier_(*purifier),
+        auto_dry_(*auto_dry),
         internal_thermistor_(*internal_thermistor),
         fahrenheit_(fahrenheit),
         slave_(is_slave_controller)
@@ -473,8 +484,15 @@ public:
             set_sleep_timer(v);
         });
 
-        purifier_.add_on_state_callback([this](bool) { set_changed(); });
-        internal_thermistor_.add_on_state_callback([this](bool) { set_changed(); });
+        purifier_.add_on_state_callback([this](bool) {
+            pending_status_change_ = true;
+        });
+        internal_thermistor_.add_on_state_callback([this](bool) {
+            pending_status_change_ = true;
+        });
+        auto_dry_.add_on_state_callback([this](bool) {
+            pending_type_a_settings_change_ = true;
+        });
     }
 
     float get_setup_priority() const override {
@@ -508,7 +526,7 @@ public:
             uint8_t b;
             UARTDevice::read_byte(&b);
         }
-        set_changed();
+        pending_status_change_ = true;
 
         // Call `update` every 6 seconds, but first wait 10 seconds.
         set_timeout("initial_send", 10000, [this]() {
@@ -530,7 +548,7 @@ public:
         if (call.get_swing_mode().has_value()) {
             set_swing_mode(*call.get_swing_mode());
         }
-        this->set_changed();
+        this->pending_status_change_ = true;
         this->publish_state();
     }
 
@@ -539,10 +557,6 @@ public:
     }
 
 private:
-    void set_changed() {
-        pending_status_change_ = true;
-    }
-
     // Sets position of vane index (1-4) to position (0-6).
     void set_vane_position(int index, int position) {
         if (index < 1 || index > 4) {
@@ -616,8 +630,15 @@ private:
             ESP_LOGE(TAG, "Ignoring sleep timer for slave controller");
             return;
         }
-        set_sleep_timer_internal(uint32_t(minutes));
-        set_changed();
+        ESP_LOGD(TAG, "Setting sleep timer: %d minutes", minutes);
+        if (minutes > 0) {
+            sleep_timer_target_millis_ = millis() + unsigned(minutes) * 60 * 1000;
+            active_reservation_ = true;
+        } else {
+            sleep_timer_target_millis_.reset();
+            active_reservation_ = false;
+        }
+        pending_status_change_ = true;
     }
 
     optional<float> get_room_temp() const {
@@ -666,17 +687,6 @@ private:
             }
         }
         this->swing_mode = mode;
-    }
-
-    void set_sleep_timer_internal(uint32_t minutes) {
-        ESP_LOGD(TAG, "Setting sleep timer: %u minutes", minutes);
-        if (minutes > 0) {
-            sleep_timer_target_millis_ = millis() + minutes * 60 * 1000;
-            active_reservation_ = true;
-        } else {
-            sleep_timer_target_millis_.reset();
-            active_reservation_ = false;
-        }
     }
 
     void send_status_message() {
@@ -877,6 +887,12 @@ private:
         send_buf_[8] = (send_buf_[8] & 0xf0) | (vane_position_[2] & 0x0f); // Set vane 3
         send_buf_[8] = (send_buf_[8] & 0x0f) | ((vane_position_[3] & 0x0f) << 4); // Set vane 4
 
+        // Set auto dry setting.
+        uint8_t b = send_buf_[11] & ~0x8;
+        if (auto_dry_.state) {
+            b |= 0x8;
+        }
+        send_buf_[11] = b;
 
         send_buf_[12] = calc_checksum(send_buf_);
 
@@ -1023,6 +1039,12 @@ private:
         }
         if (outdoor_changed) {
             last_outdoor_change_millis_ = millis();
+        }
+
+        if (sender == MessageSender::Unit && !auto_dry_.is_internal()) {
+            bool unit_off = (buffer[1] & 0x2) == 0;
+            bool drying = (buffer[10] & 0x10) && unit_off;
+            auto_dry_active_.publish_state(drying);
         }
 
         bool read_temp = false;
@@ -1230,6 +1252,8 @@ private:
             ESP_LOGE(TAG, "Unexpected vane 4 position: %u", vane4);
         }
 
+        auto_dry_.publish_state(buffer[11] & 0x8);
+
         if (sender != MessageSender::Slave) {
             // Handle fan speed 0 (slow) change
             fan_speed_[0] = buffer[2];
@@ -1388,7 +1412,7 @@ private:
                 sleep_timer_.publish_state(0);
                 ignore_sleep_timer_callback_ = false;
                 this->mode = climate::CLIMATE_MODE_OFF;
-                set_changed();
+                pending_status_change_ = true;
                 publish_state();
             } else if (optional<uint32_t> minutes = get_sleep_timer_minutes()) {
                 if (sleep_timer_.state != *minutes) {

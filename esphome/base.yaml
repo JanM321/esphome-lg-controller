@@ -108,6 +108,10 @@ climate:
       name: Outdoor Unit
       id: outdoor
       icon: mdi:fan
+    auto_dry_active:
+      name: Auto Dry Active
+      id: auto_dry_active
+      icon: mdi:fan-clock
     purifier:
       name: Air Purifier
       id: air_purifier
@@ -116,3 +120,7 @@ climate:
       name: Internal Thermistor
       id: internal_thermistor
       icon: mdi:thermometer
+    auto_dry:
+      name: Auto Dry
+      id: auto_dry
+      icon: mdi:fan-clock
