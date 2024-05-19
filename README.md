@@ -40,7 +40,7 @@ Features currently available in Home Assistant:
 * Operation mode (off, auto, cool, heat, dry/dehumidify, fan only).
 * Target temperature (0.5°C steps).
 * Use of a Home Assistant temperature sensor for room temperature (rounded to nearest 0.5°C). 
-* Fan mode (slow, low, medium, high, auto).
+* Fan speed (slow, low, medium, high, auto).
 * Swing mode (off, vertical, horizontal, both).
 * Airflow up/down setting from 0-6 for up to 4 vanes (vane angle, with 0 being default for operation mode).
 * Switch for external vs internal thermistor.
@@ -49,8 +49,8 @@ Features currently available in Home Assistant:
 * Sensors for reporting outdoor unit on/off, defrost, preheat, error code.
 * Sensors for reporting in/mid/out pipe temperatures (if supported by unit).
 * Input field for sleep timer from 0 to 420 minutes (0 turns off the sleep timer).
-* Input fields for installer fan speed setting (to fine-tune fan speeds, 0-255 with 0 being factory default).
-* Select option for installer setting 15 from 0-4 (to change over heating behavior in heating mode).
+* Input fields for fan speed installer setting (to fine-tune fan speeds, 0-255 with 0 being factory default). This is installer setting 3 (ESP Setting) on LG controllers.
+* Select option for over heating installer setting from 0-4 (to change over heating behavior in heating mode). This is installer setting 15 (Over Heating) on LG controllers.
 * YAML options for Fahrenheit mode and 'slave' controller mode.
 * Detects & exposes only supported capabilities for the connected indoor unit.
 
