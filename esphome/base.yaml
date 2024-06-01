@@ -29,6 +29,7 @@ climate:
   - platform: lg_controller
     name: ""
     id: ${deviceid}
+    uart_id: ac_serial
     fahrenheit: ${fahrenheit}
     is_slave_controller: ${is_slave_controller}
     temperature_sensor: temp_sensor
