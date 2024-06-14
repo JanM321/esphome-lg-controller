@@ -1473,10 +1473,19 @@ private:
             }
             return;
         }
-        // Send a status message every 20 seconds, or now if we have a pending change.
+        // send a status message if there is a pending change
+        // additionally, queue a type a message after sending the status message 
+        // if the swing mode does not include vertical, then the vane will be set to the previous setting
+        if (pending_status_change_) {
+            if (check_can_send()) {
+                send_status_message();
+                pending_type_a_settings_change_ = true;
+            }
+            return;
+        }
+        // Send a status message every 20 seconds
         // Slave controllers only send this if needed.
-        if (pending_status_change_ ||
-            (!slave_ && millis_now - last_sent_status_millis_ > 20 * 1000)) {
+        if ((!slave_ && millis_now - last_sent_status_millis_ > 20 * 1000)) {
             if (check_can_send()) {
                 send_status_message();
             }
