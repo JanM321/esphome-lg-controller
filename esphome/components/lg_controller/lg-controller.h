@@ -2,6 +2,10 @@
 
 #include "esphome.h"
 #include "esphome/components/uart/uart.h"
+#if defined(USE_ESP_IDF)
+#include "driver/gpio.h"
+#endif
+
 
 static const char* const TAG = "lg-controller";
 
@@ -447,8 +451,8 @@ public:
         outdoor_(*outdoor),
         auto_dry_active_(*auto_dry_active),
         purifier_(*purifier),
-        auto_dry_(*auto_dry),
         internal_thermistor_(*internal_thermistor),
+        auto_dry_(*auto_dry),
         fahrenheit_(fahrenheit),
         slave_(is_slave_controller)
     {
@@ -643,7 +647,7 @@ private:
 
     optional<float> get_room_temp() const {
         float temp = temperature_sensor_.get_state();
-        if (isnan(temp) || temp == 0) {
+        if (std::isnan(temp) || temp == 0) {
             return {};
         }
         if (fahrenheit_) {
@@ -1196,7 +1200,7 @@ private:
                 pref.save(&nvs_storage_);
                 global_preferences->sync();
                 ESP_LOGD(TAG, "restarting to apply initial capabilities");
-                ESP.restart();
+                App.safe_reboot();
             }
             else {
                 ESP_LOGD(TAG, "updated device capabilities, manual restart required to take effect");
@@ -1443,7 +1447,13 @@ private:
         // collisions.
         auto check_can_send = [&]() -> bool {
             while (true) {
-                if (UARTDevice::available() > 0 || digitalRead(RxPin) == LOW) {
+                if (UARTDevice::available() > 0 || 
+                    #if defined(USE_ESP_IDF)
+                    gpio_get_level((gpio_num_t)RxPin) == 0
+                    #elif defined(USE_ARDUINO)
+                    digitalRead(RxPin) == LOW
+                    #endif
+                ){
                     ESP_LOGD(TAG, "line busy, not sending yet");
                     return false;
                 }
