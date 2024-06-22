@@ -2,10 +2,6 @@
 
 #include "esphome.h"
 #include "esphome/components/uart/uart.h"
-#if defined(USE_ESP_IDF)
-#include "driver/gpio.h"
-#endif
-
 
 static const char* const TAG = "lg-controller";
 
@@ -134,11 +130,12 @@ constexpr int8_t TempConversion::LGCelToCelAdjustment[];
 
 class LgController final : public climate::Climate, public uart::UARTDevice, public Component {
     static constexpr size_t MsgLen = 13;
-    static constexpr int RxPin = 26; // Keep in sync with rx_pin in base.yaml.
 
     climate::ClimateTraits supported_traits_{};
 
+    InternalGPIOPin& rx_pin_;
     esphome::sensor::Sensor& temperature_sensor_;
+
     LgSelect& vane_select_1_;
     LgSelect& vane_select_2_;
     LgSelect& vane_select_3_;
@@ -408,7 +405,8 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
     }
 
 public:
-    LgController(sensor::Sensor* temperature_sensor,
+    LgController(InternalGPIOPin* rx_pin,
+                 sensor::Sensor* temperature_sensor,
                  LgSelect* vane_select_1,
                  LgSelect* vane_select_2,
                  LgSelect* vane_select_3,
@@ -431,7 +429,8 @@ public:
                  LgSwitch* internal_thermistor,
                  LgSwitch* auto_dry,
                  bool fahrenheit, bool is_slave_controller)
-      : temperature_sensor_(*temperature_sensor),
+      : rx_pin_(*rx_pin),
+        temperature_sensor_(*temperature_sensor),
         vane_select_1_(*vane_select_1),
         vane_select_2_(*vane_select_2),
         vane_select_3_(*vane_select_3),
@@ -1437,7 +1436,7 @@ private:
         // approximately the same time and the message will hopefully be corrupt (and ignored)
         // anyway. Else the pending_send_/send_buf_ mechanism should catch it and we try again.
         //
-        // Note: using digitalRead is *much* better for this than using UARTDevice because that
+        // Note: using digital_read is *much* better for this than using UARTDevice because that
         // interface has significant delays. It has to wait for a full byte to arrive and this
         // takes about 9-10 ms with our slow baud rate. There are also various buffers and
         // timeouts before incoming bytes reach us.
@@ -1447,13 +1446,7 @@ private:
         // collisions.
         auto check_can_send = [&]() -> bool {
             while (true) {
-                if (UARTDevice::available() > 0 || 
-                    #if defined(USE_ESP_IDF)
-                    gpio_get_level((gpio_num_t)RxPin) == 0
-                    #elif defined(USE_ARDUINO)
-                    digitalRead(RxPin) == LOW
-                    #endif
-                ){
+                if (UARTDevice::available() > 0 || !rx_pin_.digital_read()) {
                     ESP_LOGD(TAG, "line busy, not sending yet");
                     return false;
                 }
@@ -1476,16 +1469,10 @@ private:
             }
             return;
         }
-        // Send an AB message every 10 minutes to request pipe temperature values.
-        if (!slave_ && (millis_now - last_sent_recv_type_b_millis_) > 10 * 60 * 1000) {
-            if (check_can_send()) {
-                send_type_b_settings_message(/* timed = */ true);
-            }
-            return;
-        }
-        // send a status message if there is a pending change
-        // additionally, queue a type a message after sending the status message 
-        // if the swing mode does not include vertical, then the vane will be set to the previous setting
+        // Send a status message if there is a pending change.
+        // Additionally, queue a Type A message after sending the status message because some
+        // units set the vane position to the default setting after changing swing mode or
+        // operation mode.
         if (pending_status_change_) {
             if (check_can_send()) {
                 send_status_message();
@@ -1493,9 +1480,16 @@ private:
             }
             return;
         }
-        // Send a status message every 20 seconds
+        // Send an AB message every 10 minutes to request pipe temperature values.
+        if (!slave_ && millis_now - last_sent_recv_type_b_millis_ > 10 * 60 * 1000) {
+            if (check_can_send()) {
+                send_type_b_settings_message(/* timed = */ true);
+            }
+            return;
+        }
+        // Send a status message every 20 seconds.
         // Slave controllers only send this if needed.
-        if ((!slave_ && millis_now - last_sent_status_millis_ > 20 * 1000)) {
+        if (!slave_ && millis_now - last_sent_status_millis_ > 20 * 1000) {
             if (check_can_send()) {
                 send_status_message();
             }

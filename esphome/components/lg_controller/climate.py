@@ -1,7 +1,8 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
+from esphome import pins
 from esphome.components import binary_sensor, climate, number, select, sensor, switch, uart
-from esphome.const import CONF_ID
+from esphome.const import CONF_ID, CONF_RX_PIN
 
 CODEOWNERS = ["JanM321"]
 DEPENDENCIES = ["uart"]
@@ -53,6 +54,8 @@ CONFIG_SCHEMA = climate.CLIMATE_SCHEMA.extend(
     {
         cv.GenerateID(): cv.declare_id(LgController),
 
+        cv.Required(CONF_RX_PIN): pins.gpio_input_pin_schema,
+
         cv.Required(CONF_FAHRENHEIT): cv.boolean,
         cv.Required(CONF_IS_SLAVE_CONTROLLER): cv.boolean,
 
@@ -87,6 +90,8 @@ CONFIG_SCHEMA = climate.CLIMATE_SCHEMA.extend(
 ).extend(cv.COMPONENT_SCHEMA).extend(uart.UART_DEVICE_SCHEMA)
 
 async def to_code(config):
+    rx_pin = await cg.gpio_pin_expression(config[CONF_RX_PIN])
+
     temperature_sensor = await cg.get_variable(config[CONF_TEMPERATURE_SENSOR])
 
     vane1 = await select.new_select(config[CONF_VANE1], options=VANE_OPTIONS)
@@ -115,7 +120,7 @@ async def to_code(config):
     internal_thermistor = await switch.new_switch(config[CONF_INTERNAL_THERMISTOR])
     auto_dry = await switch.new_switch(config[CONF_AUTO_DRY])
 
-    var = cg.new_Pvariable(config[CONF_ID], temperature_sensor,
+    var = cg.new_Pvariable(config[CONF_ID], rx_pin, temperature_sensor,
                            vane1, vane2, vane3, vane4, overheating,
                            fan_speed_slow, fan_speed_low, fan_speed_medium, fan_speed_high,
                            sleep_timer,
