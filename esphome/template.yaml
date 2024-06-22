@@ -37,6 +37,7 @@ wifi:
 captive_portal:
 
 ota:
+  platform: esphome
   password: ""
 
 logger:
