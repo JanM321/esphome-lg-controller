@@ -23,13 +23,18 @@ uart:
       allow_other_uses: true
     baud_rate: 104
 
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
 sensor:
   - id: temp_sensor
     platform: homeassistant
     internal: true
     entity_id: ${temperature_sensor_entity_id}
   - platform: uptime
-    name: Uptime
+    type: timestamp
+    name: Last Boot
 
 external_components:
   - source: components
