@@ -50,10 +50,8 @@ CONF_AUTO_DRY = "auto_dry"
 VANE_OPTIONS = ["0 (Default)", "1 (Up)", "2", "3", "4", "5", "6 (Down)"]
 OVERHEATING_OPTIONS = ["0 (Default)", "1 (+4C/+6C)", "2 (+2C/+4C)", "3 (-1C/+1C)", "4 (-0.5C/+0.5C)"]
 
-CONFIG_SCHEMA = climate.CLIMATE_SCHEMA.extend(
+CONFIG_SCHEMA = climate.climate_schema(LgController).extend(
     {
-        cv.GenerateID(): cv.declare_id(LgController),
-
         cv.Required(CONF_RX_PIN): pins.gpio_input_pin_schema,
 
         cv.Required(CONF_FAHRENHEIT): cv.boolean,
