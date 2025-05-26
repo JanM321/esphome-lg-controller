@@ -134,7 +134,7 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
     climate::ClimateTraits supported_traits_{};
 
     InternalGPIOPin& rx_pin_;
-    esphome::sensor::Sensor& temperature_sensor_;
+    esphome::sensor::Sensor* temperature_sensor_;
 
     LgSelect& vane_select_1_;
     LgSelect& vane_select_2_;
@@ -430,7 +430,7 @@ public:
                  LgSwitch* auto_dry,
                  bool fahrenheit, bool is_slave_controller)
       : rx_pin_(*rx_pin),
-        temperature_sensor_(*temperature_sensor),
+        temperature_sensor_(temperature_sensor),
         vane_select_1_(*vane_select_1),
         vane_select_2_(*vane_select_2),
         vane_select_3_(*vane_select_3),
@@ -645,7 +645,11 @@ private:
     }
 
     optional<float> get_room_temp() const {
-        float temp = temperature_sensor_.get_state();
+        if (temperature_sensor_ == nullptr) {
+            return {};
+        }
+
+        float temp = temperature_sensor_->get_state();
         if (std::isnan(temp) || temp == 0) {
             return {};
         }
