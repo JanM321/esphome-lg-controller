@@ -80,6 +80,9 @@ The `hardware-tiny/` PCB can be ordered from [JLCPCB](https://cart.jlcpcb.com/qu
 
 ## "hardware-FeatherS3" (May 2025)
 
+<img src="hardware-FeatherS3/pcb-with-FeatherS3.jpg" width="400px" alt="PCB with FeatherS3">
+<img src="hardware-FeatherS3/pcb-top-and-bottom.jpg" width="400px" alt="PCB top and bottom">
+
 You need at least the following parts for each indoor unit:
 * PCB. See the even smaller PCB in the [hardware-FeatherS3/](hardware-FeatherS3/) directory.
 * Unexpected Maker's [ESP32 FeatherS3](https://esp32s3.com/feathers3.html)
