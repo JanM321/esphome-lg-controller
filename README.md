@@ -59,12 +59,46 @@ The LG ThinQ app and wireless remote can still be used to change these settings 
 Unfortunately not all settings are exposed to the wired controller, but if you're interested in a feature and it's supported by the PREMTB100 or PREMTA200 controller, please open an issue and we can consider adding it.
 
 # Hardware
+
+## Original
+
 You need at least the following parts for each indoor unit:
-* PCB. Either my original PCB in the [hardware/](hardware/) directory or the cheaper and smaller PCB in the [hardware-tiny/](hardware-tiny/) directory.
+* PCB. See the original PCB in the [hardware/](hardware/) directory
 * ESP32 DevKitC board. I used an Espressif ESP32-DevKitC-32E.
 * Cable with JST-XH connector to connect the PCB to the AC. I used an Adafruit 4873 cable.
 
-The `hardware-tiny/` PCB can be ordered from [JLCPCB](https://cart.jlcpcb.com/quote/) (see instructions [here](https://github.com/JanM321/esphome-lg-controller/issues/2#issuecomment-1801803656)). The `hardware/` PCB I ordered from [PCBWay](https://www.pcbway.com/QuickOrderOnline.aspx).
+The `hardware/` PCB I ordered from [PCBWay](https://www.pcbway.com/QuickOrderOnline.aspx).
+
+## "hardware-tiny" (November 2023)
+
+You need at least the following parts for each indoor unit:
+* PCB. See the cheaper and smaller PCB in the [hardware-tiny/](hardware-tiny/) directory.
+* ESP32 DevKitC board. I used an Espressif ESP32-DevKitC-32E.
+* Cable with JST-XH connector to connect the PCB to the AC. I used an Adafruit 4873 cable.
+
+The `hardware-tiny/` PCB can be ordered from [JLCPCB](https://cart.jlcpcb.com/quote/) (see instructions [here](https://github.com/JanM321/esphome-lg-controller/issues/2#issuecomment-1801803656)).
+
+## "hardware-FeatherS3" (May 2025)
+
+<img src="hardware-FeatherS3/pcb-with-FeatherS3.jpg" width="400px" alt="PCB with FeatherS3">
+<img src="hardware-FeatherS3/pcb-top-and-bottom.jpg" width="400px" alt="PCB top and bottom">
+
+You need at least the following parts for each indoor unit:
+* PCB. See the even smaller PCB in the [hardware-FeatherS3/](hardware-FeatherS3/) directory.
+* Unexpected Maker's [ESP32 FeatherS3](https://esp32s3.com/feathers3.html)
+* Cable with JST-XH connector to connect the PCB to the AC. I used an Adafruit 4873 cable.
+
+This PCB supports the more modern [FeatherS3 by Unexpected Maker](https://esp32s3.com/feathers3.html), which has a USB-C connector. The FeatherS3 [can be powered from the 3.3V pin](https://help.unexpectedmaker.com/index.php/knowledge-base/can-i-power-my-board-from-the-3v3-pin/), which is what is assumed here. The USB-C connector should not be connected at the same time; if you want to power the FeatherS3 via USB, you should not connect the 3.3V pin.
+
+The `hardware-FeatherS3/` PCB can be ordered from [JLCPCB](https://cart.jlcpcb.com/quote/).
+
+JLCPCB ordering instructions:
+
+* Upload [`GERBER-lg_hvac_esp32.zip`](hardware-FeatherS3/jlcpcb/production_files/GERBER-lg_hvac_esp32.zip) as the gerber file, leave all settings default.
+* Enable the `Assembly` option and the bottom of the quote page and proceed.
+* Upload [`BOM-lg_hvac_esp32.csv`](hardware-FeatherS3/jlcpcb/production_files/BOM-lg_hvac_esp32.csv) for the bom file and [`CPL-lg_hvac_esp32.csv`](hardware-FeatherS3/jlcpcb/production_files/BOM-lg_hvac_esp32.csv) for placement / cpl
+
+I paid about $50 for five boards, fully assembled, before any shipping and import duties.
 
 ## PCB (details)
 ***❗ Update November 2023: This section is for my original PCB in the hardware/ directory. [Florian Brede](https://github.com/florianbrede-ayet) has designed a smaller and cheaper PCB that can be ordered from JLCPCB. It's in the [hardware-tiny/](hardware-tiny/) directory.***

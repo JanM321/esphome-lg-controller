@@ -4,6 +4,9 @@ esphome:
 
 esp32:
   board: esp32dev
+  # For the FeatherS3, uncomment the next two lines and remove the line above.
+  #board: um_feathers3
+  #variant: esp32s3
   framework:
     type: arduino
     #type: esp-idf
@@ -17,8 +20,10 @@ esp32:
 
 uart:
   - id: ac_serial
+    # For the FeatherS3, use GPIO18
     tx_pin: GPIO25
     rx_pin:
+      # For the FeatherS3, use GPIO17
       number: GPIO26 # Keep in sync with rx_pin below.
       allow_other_uses: true
     baud_rate: 104
@@ -46,6 +51,7 @@ climate:
     id: ${deviceid}
     uart_id: ac_serial
     rx_pin:
+      # For the FeatherS3, use GPIO17
       number: GPIO26 # Keep in sync with rx_pin above.
       allow_other_uses: true
     fahrenheit: ${fahrenheit}
