@@ -57,7 +57,7 @@ CONFIG_SCHEMA = climate.climate_schema(LgController).extend(
         cv.Required(CONF_FAHRENHEIT): cv.boolean,
         cv.Required(CONF_IS_SLAVE_CONTROLLER): cv.boolean,
 
-        cv.Required(CONF_TEMPERATURE_SENSOR): cv.use_id(sensor.Sensor),
+        cv.Optional(CONF_TEMPERATURE_SENSOR): cv.use_id(sensor.Sensor),
 
         cv.Required(CONF_VANE1): select.select_schema(LgSelect),
         cv.Required(CONF_VANE2): select.select_schema(LgSelect),
@@ -90,7 +90,10 @@ CONFIG_SCHEMA = climate.climate_schema(LgController).extend(
 async def to_code(config):
     rx_pin = await cg.gpio_pin_expression(config[CONF_RX_PIN])
 
-    temperature_sensor = await cg.get_variable(config[CONF_TEMPERATURE_SENSOR])
+    if CONF_TEMPERATURE_SENSOR in config:
+        temperature_sensor = await cg.get_variable(config[CONF_TEMPERATURE_SENSOR])
+    else:
+        temperature_sensor = cg.nullptr
 
     vane1 = await select.new_select(config[CONF_VANE1], options=VANE_OPTIONS)
     vane2 = await select.new_select(config[CONF_VANE2], options=VANE_OPTIONS)
