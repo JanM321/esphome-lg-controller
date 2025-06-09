@@ -34,29 +34,6 @@ Wired controllers using the new protocol only send and receive settings and curr
 
 See [protocol.md](protocol.md) for information about the protocol based on reverse engineering the PREMTB001 and PREMTB100 controllers.
 
-# Features
-Features currently available in Home Assistant:
-* Operation mode (off, auto, cool, heat, dry/dehumidify, fan only).
-* Target temperature (0.5°C steps).
-* Use of a Home Assistant temperature sensor for room temperature (rounded to nearest 0.5°C). 
-* Fan speed (slow, low, medium, high, auto).
-* Swing mode (off, vertical, horizontal, both).
-* Airflow up/down setting from 0-6 for up to 4 vanes (vane angle, with 0 being default for operation mode).
-* Switch for external vs internal thermistor.
-* Switch for air purifier (plasma) on/off.
-* Switch and binary sensor for Auto Dry (also known as Auto Clean) feature. Used to dry indoor unit when it's turned off after cooling/dehumidifying.
-* Sensors for reporting outdoor unit on/off, defrost, preheat, error code.
-* Sensors for reporting in/mid/out pipe temperatures (if supported by unit).
-* Input field for sleep timer from 0 to 420 minutes (0 turns off the sleep timer).
-* Input fields for fan speed installer setting (to fine-tune fan speeds, 0-255 with 0 being factory default). This is installer setting 3 (ESP Setting) on LG controllers.
-* Select option for over heating installer setting from 0-4 (to change over heating behavior in heating mode). This is installer setting 15 (Over Heating) on LG controllers.
-* YAML options for Fahrenheit mode and 'slave' controller mode.
-* Detects & exposes only supported capabilities for the connected indoor unit.
-
-The LG ThinQ app and wireless remote can still be used to change these settings and other settings. They'll be synchronized with this controller.
-
-Unfortunately not all settings are exposed to the wired controller, but if you're interested in a feature and it's supported by the PREMTB100 or PREMTA200 controller, please open an issue and we can consider adding it.
-
 # Hardware
 There are three different PCB designs. The "hardware-tiny" variant is most popular at this point. The "hardware-FeatherS3" PCB is a more recent addition.
 
@@ -102,9 +79,50 @@ JLCPCB ordering instructions:
 
 I paid about $50 for five boards, fully assembled, before any shipping and import duties.
 
-*Note: if you use the FeatherS3 PCB, you'll also need to make some changes to base.yaml. See the FeatherS3 comments in that file.*
+*Note: if you use the FeatherS3 PCB, you'll also need to make some changes to `esphome/base.yaml` for ESPHome as part of the next step. See the FeatherS3 comments in that file.*
 
-## PCB (details)
+# ESPHome Firmware
+I used the following steps to build the ESPHome firmware, flash it on the device, and add the controller in Home Assistant:
+1. Clone this repository and navigate to the `esphome` directory.
+2. Install ESPHome command line tools on Linux: https://esphome.io/guides/installing_esphome.html
+3. Ensure the Python virtual environment is activated (`source venv/bin/activate`).
+4. Copy `template.yaml` to (for example) `lg-livingroom.yaml` and edit the lines marked with `XXX`.
+5. Connect the ESP32 DevKitC board to your computer with a micro USB cable. This is only needed the first time, after that it can use OTA updates over wifi.
+6. Run `esphome run lg-livingroom.yaml` to build the firmware and upload it to the device.
+7. The device can now be added in Home Assistant (Settings => Devices & Services). HA will ask you for the encryption key from the YAML file.
+8. Disconnect the micro USB cable.
+9. Install the ESP32 DevKitC board on the PCB and connect the PCB to the AC.
+
+If you just want to connect to the device to view the debug logs, use `esphome logs lg-livingroom.yaml`.
+
+# Features
+Features currently available in Home Assistant:
+* Operation mode (off, auto, cool, heat, dry/dehumidify, fan only).
+* Target temperature (0.5°C steps).
+* Use of a Home Assistant temperature sensor for room temperature (rounded to nearest 0.5°C). 
+* Fan speed (slow, low, medium, high, auto).
+* Swing mode (off, vertical, horizontal, both).
+* Airflow up/down setting from 0-6 for up to 4 vanes (vane angle, with 0 being default for operation mode).
+* Switch for external vs internal thermistor.
+* Switch for air purifier (plasma) on/off.
+* Switch and binary sensor for Auto Dry (also known as Auto Clean) feature. Used to dry indoor unit when it's turned off after cooling/dehumidifying.
+* Sensors for reporting outdoor unit on/off, defrost, preheat, error code.
+* Sensors for reporting in/mid/out pipe temperatures (if supported by unit).
+* Input field for sleep timer from 0 to 420 minutes (0 turns off the sleep timer).
+* Input fields for fan speed installer setting (to fine-tune fan speeds, 0-255 with 0 being factory default). This is installer setting 3 (ESP Setting) on LG controllers.
+* Select option for over heating installer setting from 0-4 (to change over heating behavior in heating mode). This is installer setting 15 (Over Heating) on LG controllers.
+* YAML options for Fahrenheit mode and 'slave' controller mode.
+* Detects & exposes only supported capabilities for the connected indoor unit.
+
+The LG ThinQ app and wireless remote can still be used to change these settings and other settings. They'll be synchronized with this controller.
+
+Unfortunately not all settings are exposed to the wired controller, but if you're interested in a feature and it's supported by the PREMTB100 or PREMTA200 controller, please open an issue and we can consider adding it.
+
+# Tips
+* [Issue #43](https://github.com/JanM321/esphome-lg-controller/issues/43) has some information on temperature sensors that work well for this.
+* It's possible to use a Home Assistant template sensor as room temperature sensor. I'm [using this](https://gist.github.com/JanM321/b550285713f20231386509b2c227f0b8) to work around some issues with my LG Multi F unit in heating mode.
+
+# PCB (details)
 ***❗ Update November 2023: This section is for my original PCB in the hardware/ directory. [Florian Brede](https://github.com/florianbrede-ayet) has designed a smaller and cheaper PCB that can be ordered from JLCPCB. It's in the [hardware-tiny/](hardware-tiny/) directory.***
 
 <img src="hardware/schematic.png" width="700px">
@@ -125,24 +143,6 @@ My PCB also has some capacitors, resistors and diodes that are based on the TLIN
 Note: an alternative for the LIN transceiver is the opto-isolator design used here:
 * https://github.com/AussieMakerGeek/LG_Aircon_MQTT_interface
 * https://www.instructables.com/Hacking-an-LG-Ducted-Split-for-Home-Automation/
-
-# Firmware
-I used the following steps to build the ESPHome firmware, flash it on the device, and add the controller in Home Assistant:
-1. Clone this repository and navigate to the `esphome` directory.
-2. Install ESPHome command line tools on Linux: https://esphome.io/guides/installing_esphome.html
-3. Ensure the Python virtual environment is activated (`source venv/bin/activate`).
-4. Copy `template.yaml` to (for example) `lg-livingroom.yaml` and edit the lines marked with `XXX`.
-5. Connect the ESP32 DevKitC board to your computer with a micro USB cable. This is only needed the first time, after that it can use OTA updates over wifi.
-6. Run `esphome run lg-livingroom.yaml` to build the firmware and upload it to the device.
-7. The device can now be added in Home Assistant (Settings => Devices & Services). HA will ask you for the encryption key from the YAML file.
-8. Disconnect the micro USB cable.
-9. Install the ESP32 DevKitC board on the PCB and connect the PCB to the AC.
-
-If you just want to connect to the device to view the debug logs, use `esphome logs lg-livingroom.yaml`.
-
-# Tips
-* [Issue #43](https://github.com/JanM321/esphome-lg-controller/issues/43) has some information on temperature sensors that work well for this.
-* It's possible to use a Home Assistant template sensor as room temperature sensor. I'm [using this](https://gist.github.com/JanM321/b550285713f20231386509b2c227f0b8) to work around some issues with my LG Multi F unit in heating mode.
 
 # License
 This project is licensed under the 0BSD License. See the LICENSE file for details.
