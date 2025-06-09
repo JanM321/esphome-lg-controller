@@ -8,7 +8,6 @@ This has some advantages compared to the [LG ThinQ integration](https://github.c
 * No annoying sounds from the AC unit when changing settings through the controller.
 * More settings and information available (although some settings like display light on/off are available in ThinQ but aren't passed to the wired controller).
 
-<img src="hardware-tiny/pcb.jpg" width="400px" alt="Tiny PCB"> <img src="images/controller2.jpg" width="255px" alt="PCB in enclosure">
 <img src="images/controller4.png" width="660px" alt="Screenshot of Home Assistant dashboard">
 
 # Compatibility
@@ -59,8 +58,10 @@ The LG ThinQ app and wireless remote can still be used to change these settings 
 Unfortunately not all settings are exposed to the wired controller, but if you're interested in a feature and it's supported by the PREMTB100 or PREMTA200 controller, please open an issue and we can consider adding it.
 
 # Hardware
+There are three different PCB designs. The "hardware-tiny" variant is most popular at this point. The "hardware-FeatherS3" PCB is a more recent addition.
 
-## Original
+## "hardware" (original, June 2023)
+<img src="images/controller2.jpg" width="255px" alt="PCB in enclosure">
 
 You need at least the following parts for each indoor unit:
 * PCB. See the original PCB in the [hardware/](hardware/) directory
@@ -70,6 +71,7 @@ You need at least the following parts for each indoor unit:
 The `hardware/` PCB I ordered from [PCBWay](https://www.pcbway.com/QuickOrderOnline.aspx).
 
 ## "hardware-tiny" (November 2023)
+<img src="hardware-tiny/pcb.jpg" width="400px" alt="Tiny PCB">
 
 You need at least the following parts for each indoor unit:
 * PCB. See the cheaper and smaller PCB in the [hardware-tiny/](hardware-tiny/) directory.
@@ -99,6 +101,8 @@ JLCPCB ordering instructions:
 * Upload [`BOM-lg_hvac_esp32.csv`](hardware-FeatherS3/jlcpcb/production_files/BOM-lg_hvac_esp32.csv) for the bom file and [`CPL-lg_hvac_esp32.csv`](hardware-FeatherS3/jlcpcb/production_files/BOM-lg_hvac_esp32.csv) for placement / cpl
 
 I paid about $50 for five boards, fully assembled, before any shipping and import duties.
+
+*Note: if you use the FeatherS3 PCB, you'll also need to make some changes to base.yaml. See the FeatherS3 comments in that file.*
 
 ## PCB (details)
 ***❗ Update November 2023: This section is for my original PCB in the hardware/ directory. [Florian Brede](https://github.com/florianbrede-ayet) has designed a smaller and cheaper PCB that can be ordered from JLCPCB. It's in the [hardware-tiny/](hardware-tiny/) directory.***
