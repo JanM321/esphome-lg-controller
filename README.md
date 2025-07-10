@@ -74,8 +74,8 @@ The `hardware-FeatherS3/` PCB can be ordered from [JLCPCB](https://cart.jlcpcb.c
 JLCPCB ordering instructions:
 
 * Upload [`GERBER-lg_hvac_esp32.zip`](hardware-FeatherS3/jlcpcb/production_files/GERBER-lg_hvac_esp32.zip) as the gerber file, leave all settings default.
-* Enable the `Assembly` option and the bottom of the quote page and proceed.
-* Upload [`BOM-lg_hvac_esp32.csv`](hardware-FeatherS3/jlcpcb/production_files/BOM-lg_hvac_esp32.csv) for the bom file and [`CPL-lg_hvac_esp32.csv`](hardware-FeatherS3/jlcpcb/production_files/BOM-lg_hvac_esp32.csv) for placement / cpl
+* Enable the `Assembly` option at the bottom of the quote page and proceed.
+* Upload [`BOM-lg_hvac_esp32.csv`](hardware-FeatherS3/jlcpcb/production_files/BOM-lg_hvac_esp32.csv) for the bom file and [`CPL-lg_hvac_esp32.csv`](hardware-FeatherS3/jlcpcb/production_files/CPL-lg_hvac_esp32.csv) for placement / cpl
 
 I paid about $50 for five boards, fully assembled, before any shipping and import duties.
 
