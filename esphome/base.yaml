@@ -8,8 +8,7 @@ esp32:
   #board: um_feathers3
   #variant: esp32s3
   framework:
-    type: arduino
-    #type: esp-idf
+    type: esp-idf
 
 #esp32_ble_tracker:
 #  scan_parameters:
