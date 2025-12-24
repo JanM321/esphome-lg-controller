@@ -402,7 +402,6 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
         }
 
         internal_thermistor_.set_internal(slave_);
-        sleep_timer_.set_internal(slave_);
     }
 
 public:
@@ -628,10 +627,6 @@ private:
         // 0 clears the timer. Accept max 7 hours.
         if (minutes < 0 || minutes > 7 * 60) {
             ESP_LOGE(TAG, "Ignoring invalid sleep timer value: %d minutes", minutes);
-            return;
-        }
-        if (slave_) {
-            ESP_LOGE(TAG, "Ignoring sleep timer for slave controller");
             return;
         }
         ESP_LOGD(TAG, "Setting sleep timer: %d minutes", minutes);
@@ -1176,13 +1171,11 @@ private:
         active_reservation_ = buffer[3] & 0x10;
 
         // Set or clear sleep timer.
-        if (!slave_) {
-            if (sleep_timer_target_millis_.has_value() && !active_reservation_) {
-                sleep_timer_.publish_state(0);
-            } else if (((buffer[8] >> 3) & 0x7) == 3) {
-                uint32_t minutes = (uint32_t(buffer[8] & 0x7) << 8) | buffer[9];
-                sleep_timer_.publish_state(minutes);
-            }
+        if (sleep_timer_target_millis_.has_value() && !active_reservation_) {
+            sleep_timer_.publish_state(0);
+        } else if (((buffer[8] >> 3) & 0x7) == 3) {
+            uint32_t minutes = (uint32_t(buffer[8] & 0x7) << 8) | buffer[9];
+            sleep_timer_.publish_state(minutes);
         }
 
         publish_state();
@@ -1501,7 +1494,7 @@ private:
             return;
         }
         // Send a status message every 20 seconds.
-        // Slave controllers only send this if needed.
+        // Slave controllers only send a status message when settings are changed.
         if (!slave_ && millis_now - last_sent_status_millis_ > 20 * 1000) {
             if (check_can_send()) {
                 send_status_message();
