@@ -455,19 +455,19 @@ public:
         fahrenheit_(fahrenheit),
         slave_(is_slave_controller)
     {
-        vane_select_1_.add_on_state_callback([this](std::string v, size_t index) {
+        vane_select_1_.add_on_state_callback([this](size_t index) {
             set_vane_position(1, index);
         });
-        vane_select_2_.add_on_state_callback([this](std::string v, size_t index) {
+        vane_select_2_.add_on_state_callback([this](size_t index) {
             set_vane_position(2, index);
         });
-        vane_select_3_.add_on_state_callback([this](std::string v, size_t index) {
+        vane_select_3_.add_on_state_callback([this](size_t index) {
             set_vane_position(3, index);
         });
-        vane_select_4_.add_on_state_callback([this](std::string v, size_t index) {
+        vane_select_4_.add_on_state_callback([this](size_t index) {
             set_vane_position(4, index);
         });
-        overheating_select_.add_on_state_callback([this](std::string v, size_t index) {
+        overheating_select_.add_on_state_callback([this](size_t index) {
             set_overheating(index);
         });
 
