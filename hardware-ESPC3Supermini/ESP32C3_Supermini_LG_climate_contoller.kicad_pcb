@@ -1,7 +1,7 @@
 (kicad_pcb
-	(version 20240108)
+	(version 20241229)
 	(generator "pcbnew")
-	(generator_version "8.0")
+	(generator_version "9.0")
 	(general
 		(thickness 1.6)
 		(legacy_teardrops no)
@@ -9,42 +9,43 @@
 	(paper "A4")
 	(layers
 		(0 "F.Cu" signal)
-		(31 "B.Cu" signal)
-		(32 "B.Adhes" user "B.Adhesive")
-		(33 "F.Adhes" user "F.Adhesive")
-		(34 "B.Paste" user)
-		(35 "F.Paste" user)
-		(36 "B.SilkS" user "B.Silkscreen")
-		(37 "F.SilkS" user "F.Silkscreen")
-		(38 "B.Mask" user)
-		(39 "F.Mask" user)
-		(40 "Dwgs.User" user "User.Drawings")
-		(41 "Cmts.User" user "User.Comments")
-		(42 "Eco1.User" user "User.Eco1")
-		(43 "Eco2.User" user "User.Eco2")
-		(44 "Edge.Cuts" user)
-		(45 "Margin" user)
-		(46 "B.CrtYd" user "B.Courtyard")
-		(47 "F.CrtYd" user "F.Courtyard")
-		(48 "B.Fab" user)
-		(49 "F.Fab" user)
-		(50 "User.1" user)
-		(51 "User.2" user)
-		(52 "User.3" user)
-		(53 "User.4" user)
-		(54 "User.5" user)
-		(55 "User.6" user)
-		(56 "User.7" user)
-		(57 "User.8" user)
-		(58 "User.9" user)
+		(2 "B.Cu" signal)
+		(9 "F.Adhes" user "F.Adhesive")
+		(11 "B.Adhes" user "B.Adhesive")
+		(13 "F.Paste" user)
+		(15 "B.Paste" user)
+		(5 "F.SilkS" user "F.Silkscreen")
+		(7 "B.SilkS" user "B.Silkscreen")
+		(1 "F.Mask" user)
+		(3 "B.Mask" user)
+		(17 "Dwgs.User" user "User.Drawings")
+		(19 "Cmts.User" user "User.Comments")
+		(21 "Eco1.User" user "User.Eco1")
+		(23 "Eco2.User" user "User.Eco2")
+		(25 "Edge.Cuts" user)
+		(27 "Margin" user)
+		(31 "F.CrtYd" user "F.Courtyard")
+		(29 "B.CrtYd" user "B.Courtyard")
+		(35 "F.Fab" user)
+		(33 "B.Fab" user)
+		(39 "User.1" user)
+		(41 "User.2" user)
+		(43 "User.3" user)
+		(45 "User.4" user)
+		(47 "User.5" user)
+		(49 "User.6" user)
+		(51 "User.7" user)
+		(53 "User.8" user)
+		(55 "User.9" user)
 	)
 	(setup
 		(pad_to_mask_clearance 0)
 		(allow_soldermask_bridges_in_footprints no)
+		(tenting front back)
 		(grid_origin 135 91)
 		(pcbplotparams
-			(layerselection 0x00010fc_ffffffff)
-			(plot_on_all_layers_selection 0x0000000_00000000)
+			(layerselection 0x00000000_00000000_55555555_5755f5ff)
+			(plot_on_all_layers_selection 0x00000000_00000000_00000000_00000000)
 			(disableapertmacros no)
 			(usegerberextensions yes)
 			(usegerberattributes no)
@@ -54,7 +55,6 @@
 			(dashed_line_gap_ratio 3.000000)
 			(svgprecision 4)
 			(plotframeref no)
-			(viasonmask no)
 			(mode 1)
 			(useauxorigin no)
 			(hpglpennumber 1)
@@ -62,16 +62,19 @@
 			(hpglpendiameter 15.000000)
 			(pdf_front_fp_property_popups yes)
 			(pdf_back_fp_property_popups yes)
+			(pdf_metadata yes)
+			(pdf_single_document no)
 			(dxfpolygonmode yes)
 			(dxfimperialunits yes)
 			(dxfusepcbnewfont yes)
 			(psnegative no)
 			(psa4output no)
-			(plotreference no)
-			(plotvalue no)
-			(plotfptext no)
-			(plotinvisibletext no)
+			(plot_black_and_white yes)
 			(sketchpadsonfab no)
+			(plotpadnumbers no)
+			(hidednponfab no)
+			(sketchdnponfab yes)
+			(crossoutdnponfab yes)
 			(subtractmaskfromsilk yes)
 			(outputformat 1)
 			(mirror no)
@@ -124,25 +127,13 @@
 			)
 		)
 		(property "Value" "ESP32-C3_SUPERMINI"
-			(at 0 8 -90)
+			(at 0 8 270)
 			(layer "F.Fab")
 			(uuid "cee1a900-8037-4b05-96e5-beb46e3ec5eb")
 			(effects
 				(font
 					(size 1 1)
 					(thickness 0.15)
-				)
-			)
-		)
-		(property "Footprint" "my-footprints:ESP32-C3 SUPERMINI"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "b257fae8-19ce-4bf1-acff-0876216bb066")
-			(effects
-				(font
-					(size 1.27 1.27)
 				)
 			)
 		)
@@ -155,6 +146,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 			)
 		)
@@ -167,13 +159,14 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 			)
 		)
 		(property ki_fp_filters "ESP?WROOM?02*")
 		(path "/8cae26ff-28e7-4473-a193-3c8687037acb")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -9.11 -16.91)
@@ -223,7 +216,7 @@
 				(width 0.12)
 				(type solid)
 			)
-			(fill solid)
+			(fill yes)
 			(layer "F.SilkS")
 			(uuid "86d508b6-8381-46de-950b-cbe4ea407718")
 		)
@@ -308,7 +301,7 @@
 			(uuid "8fce908a-42ed-4ce1-8d52-8e9adbf3b7ae")
 		)
 		(fp_text user "KEEP-OUT ZONE"
-			(at 0 5 -90)
+			(at 0 5 270)
 			(layer "Cmts.User")
 			(uuid "12e69d52-b27e-4987-bfa4-2438c79f79f7")
 			(effects
@@ -319,7 +312,7 @@
 			)
 		)
 		(fp_text user "Antenna"
-			(at -0.3 6.2 -90)
+			(at -0.3 6.2 270)
 			(layer "Cmts.User")
 			(uuid "5831d6bc-0ce0-4b2a-8aad-827effe5aacd")
 			(effects
@@ -330,7 +323,7 @@
 			)
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 1.4 -90)
+			(at 0 1.4 270)
 			(layer "F.Fab")
 			(uuid "f78c1f50-323c-4837-9c88-3836849730da")
 			(effects
@@ -343,7 +336,7 @@
 		(pad "1" smd rect
 			(at -8.5 -15 90)
 			(size 3 1.6)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 11 "unconnected-(U1-IO5-Pad1)")
 			(pinfunction "IO5")
 			(pintype "bidirectional")
@@ -352,7 +345,7 @@
 		(pad "2" smd rect
 			(at -8.5 -12.46 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 14 "unconnected-(U1-IO6-Pad2)")
 			(pinfunction "IO6")
 			(pintype "bidirectional")
@@ -361,7 +354,7 @@
 		(pad "3" smd rect
 			(at -8.5 -9.92 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 13 "unconnected-(U1-IO7-Pad3)")
 			(pinfunction "IO7")
 			(pintype "bidirectional")
@@ -370,7 +363,7 @@
 		(pad "4" smd rect
 			(at -8.5 -7.38 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 21 "unconnected-(U1-IO8-Pad4)")
 			(pinfunction "IO8")
 			(pintype "bidirectional")
@@ -379,7 +372,7 @@
 		(pad "5" smd rect
 			(at -8.5 -4.84 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 17 "unconnected-(U1-IO9-Pad5)")
 			(pinfunction "IO9")
 			(pintype "bidirectional")
@@ -388,7 +381,7 @@
 		(pad "6" smd rect
 			(at -8.5 -2.3 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 15 "unconnected-(U1-IO10-Pad6)")
 			(pinfunction "IO10")
 			(pintype "bidirectional")
@@ -397,7 +390,7 @@
 		(pad "7" smd rect
 			(at -8.5 0.24 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 9 "RX")
 			(pinfunction "IO20")
 			(pintype "bidirectional")
@@ -406,7 +399,7 @@
 		(pad "8" smd rect
 			(at -8.5 2.78 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 19 "TX")
 			(pinfunction "IO21")
 			(pintype "bidirectional")
@@ -415,7 +408,7 @@
 		(pad "9" smd rect
 			(at 8.5 2.78 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 22 "unconnected-(U1-IO0-Pad9)")
 			(pinfunction "IO0")
 			(pintype "bidirectional")
@@ -424,7 +417,7 @@
 		(pad "10" smd rect
 			(at 8.5 0.24 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 10 "unconnected-(U1-IO1-Pad10)")
 			(pinfunction "IO1")
 			(pintype "bidirectional")
@@ -433,7 +426,7 @@
 		(pad "11" smd rect
 			(at 8.5 -2.3 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 20 "unconnected-(U1-IO2-Pad11)")
 			(pinfunction "IO2")
 			(pintype "bidirectional")
@@ -442,7 +435,7 @@
 		(pad "12" smd rect
 			(at 8.5 -4.84 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 12 "unconnected-(U1-IO3-Pad12)")
 			(pinfunction "IO3")
 			(pintype "bidirectional")
@@ -451,7 +444,7 @@
 		(pad "13" smd rect
 			(at 8.5 -7.38 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 16 "unconnected-(U1-IO4-Pad13)")
 			(pinfunction "IO4")
 			(pintype "bidirectional")
@@ -460,7 +453,7 @@
 		(pad "14" smd rect
 			(at 8.5 -9.92 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 8 "+3.3V")
 			(pinfunction "3V3")
 			(pintype "power_in")
@@ -469,7 +462,7 @@
 		(pad "15" smd rect
 			(at 8.5 -12.46 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 2 "GND")
 			(pinfunction "GND")
 			(pintype "power_in")
@@ -478,7 +471,7 @@
 		(pad "16" smd rect
 			(at 8.5 -15 90)
 			(size 3 1.5)
-			(layers "F.Cu" "F.Paste" "F.Mask")
+			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 18 "+5V")
 			(pinfunction "5V")
 			(pintype "power_in")
@@ -487,7 +480,7 @@
 		(zone
 			(net 0)
 			(net_name "")
-			(layers "*.Cu")
+			(layers "F.Cu" "B.Cu")
 			(uuid "e0aa4b0a-69ff-41ba-9914-d5786c551b6a")
 			(hatch full 0.508)
 			(connect_pads
@@ -502,6 +495,10 @@
 				(copperpour not_allowed)
 				(footprints not_allowed)
 			)
+			(placement
+				(enabled no)
+				(sheetname "")
+			)
 			(fill
 				(thermal_gap 0.508)
 				(thermal_bridge_width 0.508)
@@ -512,6 +509,7 @@
 				)
 			)
 		)
+		(embedded_fonts no)
 		(model "${LIB_DIR}/3dpackage/ESP32-C3 supermini v5.step"
 			(offset
 				(xyz -20 -1.5 -3.5)
@@ -554,20 +552,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "44916bc4-158c-476b-b1c4-e423fcdfd0df")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
+		(property "Datasheet" "~"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -576,6 +561,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -589,14 +575,15 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
 		)
 		(property ki_fp_filters "C_*")
 		(path "/5f509d80-31a4-4d42-9f2a-3b80c263c1b4")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd exclude_from_bom dnp)
 		(fp_line
 			(start 0.107836 0.36)
@@ -713,7 +700,7 @@
 		(pad "1" smd roundrect
 			(at -0.48 0 180)
 			(size 0.56 0.62)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 8 "+3.3V")
 			(pintype "passive")
@@ -722,12 +709,13 @@
 		(pad "2" smd roundrect
 			(at 0.48 0 180)
 			(size 0.56 0.62)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 4 "Net-(U2-FB)")
 			(pintype "passive")
 			(uuid "c9801c96-cff7-4420-a2fa-e4eaeff4ce0d")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Capacitor_SMD.3dshapes/C_0402_1005Metric.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -771,20 +759,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Footprint" "my-footprints:CONN_S3B-XH-SM4-TBLFSN_JST"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "4e13829c-9ec5-4798-b53d-8e8df4846021")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
+		(property "Datasheet" "~"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -793,6 +768,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -806,14 +782,43 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "MPN" "S3B-XH-SM4-TB(LF)(SN)"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "547b8d93-e143-4029-aa91-61c109c9ba0e")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "LCSC" "C5306495"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "6dc9e835-3648-45a7-9b7c-2c4faaa4f125")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
 		)
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/60ceb8e5-fda6-4189-9578-6d45446c1752")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -4.465561 5.1308)
@@ -893,7 +898,7 @@
 				(width 0.12)
 				(type solid)
 			)
-			(fill solid)
+			(fill yes)
 			(layer "B.SilkS")
 			(uuid "4091c03c-3043-4090-bf5e-c7b0422453f2")
 		)
@@ -984,7 +989,7 @@
 				(width 0.508)
 				(type solid)
 			)
-			(fill none)
+			(fill no)
 			(layer "B.Fab")
 			(uuid "a8e0e067-b3e9-42d4-bc87-d9ca95847b54")
 		)
@@ -1004,7 +1009,7 @@
 		(pad "1" smd rect
 			(at 2.5 -3.546201 270)
 			(size 1.2954 4.4958)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(net 2 "GND")
 			(pinfunction "Pin_1")
 			(pintype "passive")
@@ -1013,7 +1018,7 @@
 		(pad "2" smd rect
 			(at 0 -3.546201 270)
 			(size 1.2954 4.4958)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(net 1 "LIN")
 			(pinfunction "Pin_2")
 			(pintype "passive")
@@ -1022,7 +1027,7 @@
 		(pad "3" smd rect
 			(at -2.5 -3.546201 270)
 			(size 1.2954 4.4958)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(net 5 "+12V")
 			(pinfunction "Pin_3")
 			(pintype "passive")
@@ -1031,15 +1036,16 @@
 		(pad "4" smd rect
 			(at -5.700001 3.253799 180)
 			(size 3.9116 1.8034)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(uuid "bee46eed-f332-4fff-9edf-f804d93f5b2a")
 		)
 		(pad "5" smd rect
 			(at 5.700001 3.253799 180)
 			(size 3.9116 1.8034)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(uuid "56b34ab4-63f0-4585-8923-ff9b9f71e2ac")
 		)
+		(embedded_fonts no)
 		(model "${MODEL_DIR}/Connector/JST_-_S3B-XH-SM4-TB(LF)(SN).step"
 			(offset
 				(xyz 0 1 0)
@@ -1059,7 +1065,7 @@
 		(descr "Capacitor SMD 1206 (3216 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C3"
-			(at 2 -3.75 -90)
+			(at 2 -3.75 270)
 			(layer "B.SilkS")
 			(uuid "8c726c95-607c-4181-a065-24df86875904")
 			(effects
@@ -1082,20 +1088,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_1206_3216Metric"
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "e6a8395e-91b2-4393-84c6-c27a5f9b2bc4")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
+		(property "Datasheet" "~"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -1104,6 +1097,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -1117,14 +1111,15 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
 		)
 		(property ki_fp_filters "C_*")
 		(path "/4811b06c-6740-4c50-a3b9-73297a814ee6")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.711252 0.91)
@@ -1241,7 +1236,7 @@
 		(pad "1" smd roundrect
 			(at -1.475 0 180)
 			(size 1.15 1.8)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.2173913043)
 			(net 3 "Net-(D1-K)")
 			(pintype "passive")
@@ -1250,12 +1245,13 @@
 		(pad "2" smd roundrect
 			(at 1.475 0 180)
 			(size 1.15 1.8)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.2173913043)
 			(net 2 "GND")
 			(pintype "passive")
 			(uuid "318cea58-0f6a-4341-8d4b-f64442a68483")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Capacitor_SMD.3dshapes/C_1206_3216Metric.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -1297,20 +1293,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "5d1cd184-d9d6-4751-88b2-f6719b4e1658")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
+		(property "Datasheet" "~"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -1319,6 +1302,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -1332,6 +1316,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -1350,10 +1335,24 @@
 				(justify mirror)
 			)
 		)
+		(property "LCSC" "C25912"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "80cf5aad-a152-4f8b-8099-e89bf3cc81dd")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/bd955cdf-1548-440e-a072-daa4b6a346d5")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.153641 0.38)
@@ -1470,7 +1469,7 @@
 		(pad "1" smd roundrect
 			(at -0.51 0 180)
 			(size 0.54 0.64)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 8 "+3.3V")
 			(pintype "passive")
@@ -1479,12 +1478,13 @@
 		(pad "2" smd roundrect
 			(at 0.51 0 180)
 			(size 0.54 0.64)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 4 "Net-(U2-FB)")
 			(pintype "passive")
 			(uuid "b9a3a0f0-17e0-4f12-a9d5-194c7f72e10d")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Resistor_SMD.3dshapes/R_0402_1005Metric.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -1528,20 +1528,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Footprint" "Inductor_SMD_Wurth:L_Wurth_WE-LQSH-3012"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "75e57fa5-3125-4ef7-8ed4-3c966f17343e")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
+		(property "Datasheet" "~"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -1550,6 +1537,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -1563,12 +1551,13 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
 		)
 		(property "JCSC" "C5289310"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(unlocked yes)
 			(layer "B.Fab")
 			(hide yes)
@@ -1581,10 +1570,24 @@
 				(justify mirror)
 			)
 		)
+		(property "LCSC" "C5289310"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "eafca99f-1070-43db-a599-35e5b4902e61")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
 		(property ki_fp_filters "Choke_* *Coil* Inductor_* L_*")
 		(path "/c87600d7-23ea-4e6e-800c-bb9a7e368e42")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 1.5 1.66)
@@ -1613,7 +1616,7 @@
 				(width 0.05)
 				(type solid)
 			)
-			(fill none)
+			(fill no)
 			(layer "B.CrtYd")
 			(uuid "ee168655-3ba0-4a21-a7b4-c0f1fe4aa3ae")
 		)
@@ -1683,7 +1686,7 @@
 		(pad "1" smd rect
 			(at -1.175 0 270)
 			(size 0.85 2.8)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(net 7 "Net-(U2-PH)")
 			(pinfunction "1")
 			(pintype "passive")
@@ -1692,12 +1695,13 @@
 		(pad "2" smd rect
 			(at 1.175 0 270)
 			(size 0.85 2.8)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(net 8 "+3.3V")
 			(pinfunction "2")
 			(pintype "passive")
 			(uuid "0fd58468-88b0-4117-b52e-67b26faa1f63")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Inductor_SMD_Wurth.3dshapes/L_Wurth_WE-LQSH-3012.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -1740,20 +1744,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "cec7cb60-eb13-43cf-bfd5-c4aa26c693c2")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
+		(property "Datasheet" "~"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -1762,6 +1753,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -1775,12 +1767,13 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
 		)
 		(property "JCSC" "C25744"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(unlocked yes)
 			(layer "B.Fab")
 			(hide yes)
@@ -1793,10 +1786,24 @@
 				(justify mirror)
 			)
 		)
+		(property "LCSC" "C25744"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "76c56976-9ca5-4b1e-a847-898ec773a708")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/d92f6a3e-64ad-4520-bac8-24e781ad91f0")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.153641 0.38)
@@ -1913,7 +1920,7 @@
 		(pad "1" smd roundrect
 			(at -0.51 0 270)
 			(size 0.54 0.64)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 9 "RX")
 			(pintype "passive")
@@ -1922,12 +1929,13 @@
 		(pad "2" smd roundrect
 			(at 0.51 0 270)
 			(size 0.54 0.64)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 8 "+3.3V")
 			(pintype "passive")
 			(uuid "44b6a40e-aa2e-45d7-8dae-4779962feaf3")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Resistor_SMD.3dshapes/R_0402_1005Metric.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -1969,20 +1977,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 0 0 180)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "8d0f7c26-8e4c-4971-b38e-efd73ff8be98")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
+		(property "Datasheet" "~"
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -1991,6 +1986,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -2004,6 +2000,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -2022,10 +2019,24 @@
 				(justify mirror)
 			)
 		)
+		(property "LCSC" "C11702"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "a6560e99-fb34-4947-b269-fd1d1821ea89")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/f3653df8-0235-4690-8ce2-8324eece6580")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.153641 -0.38)
@@ -2142,7 +2153,7 @@
 		(pad "1" smd roundrect
 			(at -0.51 0)
 			(size 0.54 0.64)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 1 "LIN")
 			(pintype "passive")
@@ -2151,12 +2162,13 @@
 		(pad "2" smd roundrect
 			(at 0.51 0)
 			(size 0.54 0.64)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 6 "Net-(D2-K)")
 			(pintype "passive")
 			(uuid "2b72e9c6-0b4f-4dea-9c33-1bc83b9a5092")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Resistor_SMD.3dshapes/R_0402_1005Metric.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -2199,20 +2211,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "59ed60b4-a97f-4e79-8670-a10fbe63c62e")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
+		(property "Datasheet" "~"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -2221,6 +2220,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -2234,6 +2234,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -2252,10 +2253,24 @@
 				(justify mirror)
 			)
 		)
+		(property "LCSC" "C25765"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "e6ed2316-6d71-4129-a280-749c563c964a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
 		(property ki_fp_filters "R_*")
 		(path "/59c93101-9507-4831-9473-31ddbc27d7e2")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.153641 0.38)
@@ -2372,7 +2387,7 @@
 		(pad "1" smd roundrect
 			(at -0.51 0 180)
 			(size 0.54 0.64)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 4 "Net-(U2-FB)")
 			(pintype "passive")
@@ -2381,12 +2396,13 @@
 		(pad "2" smd roundrect
 			(at 0.51 0 180)
 			(size 0.54 0.64)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 2 "GND")
 			(pintype "passive")
 			(uuid "240c8a70-7564-4b87-bb4f-fb9ba19b4615")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Resistor_SMD.3dshapes/R_0402_1005Metric.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -2429,19 +2445,6 @@
 				(justify mirror)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "9deb9dd8-9f14-4b04-adb2-40100e5e05c1")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
 		(property "Datasheet" "https://www.vishay.com/docs/85748/1n4148w.pdf"
 			(at 0 0 0)
 			(unlocked yes)
@@ -2451,6 +2454,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -2464,6 +2468,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -2512,8 +2517,8 @@
 		)
 		(property ki_fp_filters "D*SOD?123*")
 		(path "/1255b236-ceec-401d-b016-e4451c4103e2")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 1.05 0.85)
@@ -2700,7 +2705,7 @@
 		(pad "1" smd roundrect
 			(at -1.05 0 180)
 			(size 0.6 0.45)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 3 "Net-(D1-K)")
 			(pinfunction "K")
@@ -2710,13 +2715,14 @@
 		(pad "2" smd roundrect
 			(at 1.05 0 180)
 			(size 0.6 0.45)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 5 "+12V")
 			(pinfunction "A")
 			(pintype "passive")
 			(uuid "18e384e9-44f8-4616-8f8c-f06de22d9b08")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Diode_SMD.3dshapes/D_SOD-323.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -2759,19 +2765,6 @@
 				(justify mirror)
 			)
 		)
-		(property "Footprint" "Package_TO_SOT_SMD:SOT-23-5"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "c2aa597e-59b6-462e-9a54-f80bfde2c4d6")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
 		(property "Datasheet" "http://www.ti.com/lit/ds/symlink/tps560200.pdf"
 			(at 0 0 90)
 			(unlocked yes)
@@ -2781,6 +2774,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -2794,12 +2788,13 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
 		)
 		(property "JCSC" "C83671"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(unlocked yes)
 			(layer "B.Fab")
 			(hide yes)
@@ -2812,10 +2807,24 @@
 				(justify mirror)
 			)
 		)
+		(property "LCSC" "C83671"
+			(at 0 0 270)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "aea927ca-f1fa-44bf-bc13-87c0fdc0d3f4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
 		(property ki_fp_filters "SOT?23*")
 		(path "/e5e770ec-37b1-4500-ae16-00f73e743550")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.8 1.56)
@@ -2865,7 +2874,7 @@
 				(width 0.12)
 				(type solid)
 			)
-			(fill solid)
+			(fill yes)
 			(layer "B.SilkS")
 			(uuid "c9ef3380-80f6-4876-8036-17fe3e6ab74c")
 		)
@@ -2974,7 +2983,7 @@
 		(pad "1" smd roundrect
 			(at -1.1375 0.95 270)
 			(size 1.325 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 23 "unconnected-(U2-EN-Pad1)")
 			(pinfunction "EN")
@@ -2984,7 +2993,7 @@
 		(pad "2" smd roundrect
 			(at -1.1375 0 270)
 			(size 1.325 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 2 "GND")
 			(pinfunction "GND")
@@ -2994,7 +3003,7 @@
 		(pad "3" smd roundrect
 			(at -1.1375 -0.95 270)
 			(size 1.325 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 7 "Net-(U2-PH)")
 			(pinfunction "PH")
@@ -3004,7 +3013,7 @@
 		(pad "4" smd roundrect
 			(at 1.1375 -0.95 270)
 			(size 1.325 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 3 "Net-(D1-K)")
 			(pinfunction "VIN")
@@ -3014,13 +3023,14 @@
 		(pad "5" smd roundrect
 			(at 1.1375 0.95 270)
 			(size 1.325 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 4 "Net-(U2-FB)")
 			(pinfunction "FB")
 			(pintype "input")
 			(uuid "949d8fe9-b27e-41b2-9b8c-11a957eb4c9e")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Package_TO_SOT_SMD.3dshapes/SOT-23-5.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -3040,7 +3050,7 @@
 		(descr "SOIC, 8 Pin (JEDEC MS-012AA, https://www.analog.com/media/en/package-pcb-resources/package/pkg_pdf/soic_narrow-r/r_8.pdf), generated with kicad-footprint-generator ipc_gullwing_generator.py")
 		(tags "SOIC SO")
 		(property "Reference" "U4"
-			(at 0 3.4 180)
+			(at -4.775 -0.58 180)
 			(layer "B.SilkS")
 			(uuid "a800cf01-02ca-4684-a04a-75f97c9fcf2e")
 			(effects
@@ -3063,20 +3073,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "c1c06d9f-7b5f-4a59-873f-bf8a157f6352")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" "http://www.nxp.com/docs/en/data-sheet/TJA1029.pdf"
+		(property "Datasheet" "http://www.nxp.com/docs/en/data-sheet/TJA1027.pdf"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -3085,6 +3082,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -3098,14 +3096,29 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "LCSC" "C194371"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "528f1873-3be8-483d-b7bd-501c5cb04fd1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
 		)
 		(property ki_fp_filters "SOIC*3.9x4.9mm*P1.27mm*")
 		(path "/889d286a-be16-4660-aeec-60fa7ec5fb69")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 1.95 2.56)
@@ -3155,7 +3168,7 @@
 				(width 0.12)
 				(type solid)
 			)
-			(fill solid)
+			(fill yes)
 			(layer "B.SilkS")
 			(uuid "15ac1fd7-6c37-41e2-ac1a-dd6e5fad61be")
 		)
@@ -3264,7 +3277,7 @@
 		(pad "1" smd roundrect
 			(at -2.475 1.905 180)
 			(size 1.95 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 9 "RX")
 			(pinfunction "RXD")
@@ -3274,7 +3287,7 @@
 		(pad "2" smd roundrect
 			(at -2.475 0.635 180)
 			(size 1.95 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 8 "+3.3V")
 			(pinfunction "~{SLP}")
@@ -3284,7 +3297,7 @@
 		(pad "3" smd roundrect
 			(at -2.475 -0.635 180)
 			(size 1.95 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 24 "unconnected-(U4-NC-Pad3)")
 			(pinfunction "NC")
@@ -3294,7 +3307,7 @@
 		(pad "4" smd roundrect
 			(at -2.475 -1.905 180)
 			(size 1.95 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 19 "TX")
 			(pinfunction "TXD")
@@ -3304,7 +3317,7 @@
 		(pad "5" smd roundrect
 			(at 2.475 -1.905 180)
 			(size 1.95 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 2 "GND")
 			(pinfunction "GND")
@@ -3314,7 +3327,7 @@
 		(pad "6" smd roundrect
 			(at 2.475 -0.635 180)
 			(size 1.95 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 1 "LIN")
 			(pinfunction "LIN")
@@ -3324,7 +3337,7 @@
 		(pad "7" smd roundrect
 			(at 2.475 0.635 180)
 			(size 1.95 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 5 "+12V")
 			(pinfunction "VBAT")
@@ -3334,13 +3347,14 @@
 		(pad "8" smd roundrect
 			(at 2.475 1.905 180)
 			(size 1.95 0.6)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 25 "unconnected-(U4-NC-Pad8)")
 			(pinfunction "NC")
 			(pintype "no_connect")
 			(uuid "c899717a-7561-4a0e-8591-ba8e8b62ef23")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Package_SO.3dshapes/SOIC-8_3.9x4.9mm_P1.27mm.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -3382,20 +3396,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_1206_3216Metric"
-			(at 0 0 180)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "c10141bb-5d3c-4798-9c93-b75b07b9e26f")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
+		(property "Datasheet" "~"
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -3404,6 +3405,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -3417,14 +3419,15 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
 		)
 		(property ki_fp_filters "C_*")
 		(path "/477a6daf-02dd-4bb6-b365-cbfdda6d179f")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.711252 -0.91)
@@ -3541,7 +3544,7 @@
 		(pad "1" smd roundrect
 			(at -1.475 0)
 			(size 1.15 1.8)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.2173913043)
 			(net 8 "+3.3V")
 			(pintype "passive")
@@ -3550,12 +3553,13 @@
 		(pad "2" smd roundrect
 			(at 1.475 0)
 			(size 1.15 1.8)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.2173913043)
 			(net 2 "GND")
 			(pintype "passive")
 			(uuid "fbd103a3-33ab-4596-ba58-ed9304e37adc")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Capacitor_SMD.3dshapes/C_1206_3216Metric.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -3598,20 +3602,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 0 0 180)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "8de8227d-3ef6-423f-a565-240d48bbe30b")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
+		(property "Datasheet" "~"
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -3620,6 +3611,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -3633,14 +3625,29 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
+		(property "LCSC" "C1525"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "f03e5293-a8d8-4a00-b85a-a57c48258414")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
 		)
 		(property ki_fp_filters "C_*")
 		(path "/c59589ec-2575-4b00-9a40-d9dbd44f3de4")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.107836 -0.36)
@@ -3757,7 +3764,7 @@
 		(pad "1" smd roundrect
 			(at -0.48 0)
 			(size 0.56 0.62)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 5 "+12V")
 			(pintype "passive")
@@ -3766,12 +3773,13 @@
 		(pad "2" smd roundrect
 			(at 0.48 0)
 			(size 0.56 0.62)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 2 "GND")
 			(pintype "passive")
 			(uuid "3a53437e-4e1a-48d5-bd08-e2d4f4d5130f")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Capacitor_SMD.3dshapes/C_0402_1005Metric.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -3813,19 +3821,6 @@
 				)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 0 0 180)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "2d433dd9-32e7-4eb3-9e77-0919d38e920c")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
 		(property "Datasheet" "https://www.vishay.com/docs/85748/1n4148w.pdf"
 			(at 0 0 180)
 			(unlocked yes)
@@ -3835,6 +3830,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -3848,6 +3844,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -3896,8 +3893,8 @@
 		)
 		(property ki_fp_filters "D*SOD?123*")
 		(path "/e9fcb105-d2ff-4bbd-87d6-07458ce84dfa")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -1.61 -0.85)
@@ -4084,7 +4081,7 @@
 		(pad "1" smd roundrect
 			(at -1.05 0)
 			(size 0.6 0.45)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 6 "Net-(D2-K)")
 			(pinfunction "K")
@@ -4094,13 +4091,14 @@
 		(pad "2" smd roundrect
 			(at 1.05 0)
 			(size 0.6 0.45)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 5 "+12V")
 			(pinfunction "A")
 			(pintype "passive")
 			(uuid "dbe50ff2-643a-4786-b2b4-175d52885107")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Diode_SMD.3dshapes/D_SOD-323.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -4120,7 +4118,7 @@
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C1"
-			(at -0.1 1.36 -90)
+			(at -0.1 1.36 270)
 			(layer "B.SilkS")
 			(uuid "01d2980f-5d32-4723-b585-26801ed85e85")
 			(effects
@@ -4132,7 +4130,7 @@
 			)
 		)
 		(property "Value" "220p"
-			(at 0 -1.16 -90)
+			(at 0 -1.16 270)
 			(layer "B.Fab")
 			(uuid "f3be8cb3-ba3e-4a52-abc9-d92c4c2eb601")
 			(effects
@@ -4143,20 +4141,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 0 0 90)
-			(unlocked yes)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "9e20079e-7d21-4344-88dd-00a78ab97d49")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
+		(property "Datasheet" "~"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "B.Fab")
@@ -4165,6 +4150,7 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
@@ -4178,14 +4164,15 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.15)
 				)
 				(justify mirror)
 			)
 		)
 		(property ki_fp_filters "C_*")
 		(path "/67ce0014-a90a-495c-bb7b-a3b856a3892b")
-		(sheetname "Stammblatt")
-		(sheetfile "ESP_LG_climate_contoller.kicad_sch")
+		(sheetname "/")
+		(sheetfile "ESP32C3_Supermini_LG_climate_contoller.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.107836 0.36)
@@ -4288,7 +4275,7 @@
 			(uuid "76c3681b-1c2a-4807-a3a7-f84839576ef7")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "B.Fab")
 			(uuid "b4a0a232-6adf-40b4-b6cf-966f9c8315dc")
 			(effects
@@ -4302,7 +4289,7 @@
 		(pad "1" smd roundrect
 			(at -0.48 0 270)
 			(size 0.56 0.62)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 1 "LIN")
 			(pintype "passive")
@@ -4311,12 +4298,13 @@
 		(pad "2" smd roundrect
 			(at 0.48 0 270)
 			(size 0.56 0.62)
-			(layers "B.Cu" "B.Paste" "B.Mask")
+			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.25)
 			(net 2 "GND")
 			(pintype "passive")
 			(uuid "aef879d3-4949-44c2-8240-af522332a57e")
 		)
+		(embedded_fonts no)
 		(model "${KICAD8_3DMODEL_DIR}/Capacitor_SMD.3dshapes/C_0402_1005Metric.wrl"
 			(offset
 				(xyz 0 0 0)
@@ -5690,4 +5678,5 @@
 			)
 		)
 	)
+	(embedded_fonts no)
 )
