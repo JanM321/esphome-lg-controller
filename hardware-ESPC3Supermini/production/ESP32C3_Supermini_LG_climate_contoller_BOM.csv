@@ -1,0 +1,14 @@
+"Id";"Designator";"Footprint";"Quantity";"Designation";"Supplier and ref";
+1;"ESP32 S3/C3 mini";"ESP32-C3 SUPERMINI";1;"ESP32-C3_SUPERMINI";;;
+2;"J1";"CONN_S3B-XH-SM4-TBLFSN_JST";1;"Conn_01x03_Pin";;;
+3;"C3";"C_1206_3216Metric";1;"10u";;;
+4;"R1";"R_0402_1005Metric";1;"61k9";;;
+5;"L1";"L_Wurth_WE-LQSH-3012";1;"L";;;
+6;"R3";"R_0402_1005Metric";1;"10k";;;
+7;"R4";"R_0402_1005Metric";1;"1k";;;
+8;"R2";"R_0402_1005Metric";1;"20k";;;
+9;"D1,D2";"D_SOD-323";2;"1N4148W";;;
+10;"U2";"SOT-23-5";1;"TPS560200";;;
+11;"C2";"C_1206_3216Metric";1;"22u";;;
+12;"U3";"SOIC-8_3.9x4.9mm_P1.27mm";1;"TJA1029T";;;
+13;"C1";"C_0402_1005Metric";1;"220p";;;
