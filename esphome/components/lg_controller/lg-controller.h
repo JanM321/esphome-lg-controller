@@ -305,9 +305,9 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
             climate::CLIMATE_SWING_VERTICAL,
             climate::CLIMATE_SWING_HORIZONTAL,
         });
-        supported_traits_.set_supports_current_temperature(true);
-        supported_traits_.set_supports_two_point_target_temperature(false);
-        supported_traits_.set_supports_action(false);
+        supported_traits_.add_feature_flags(climate::CLIMATE_SUPPORTS_CURRENT_TEMPERATURE);
+        // Two point target temperature not supported
+        // Action support not needed
         supported_traits_.set_visual_min_temperature(MIN_TEMP_SETPOINT);
         supported_traits_.set_visual_max_temperature(MAX_TEMP_SETPOINT);
         supported_traits_.set_visual_current_temperature_step(fahrenheit_ ? 1 : 0.5);
