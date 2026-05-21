@@ -10,6 +10,18 @@ namespace esphome::lg_controller {
 static constexpr size_t MIN_TEMP_SETPOINT = 16;
 static constexpr size_t MAX_TEMP_SETPOINT = 30;
 
+// Provides access to the protected internal flag on ESPHome entity types
+// (Sensor, BinarySensor, etc.) without using the deprecated set_internal().
+// In ESPHome 2026.3.0+ the flag lives in a packed EntityFlags struct (flags_.internal)
+// and set_internal() is deprecated. We take a pointer-to-member through a derived
+// class to reach the protected flags_ member of any EntityBase reference.
+struct EntityInternalAccess : public EntityBase {
+    static void mark_internal(EntityBase& entity, bool internal) {
+        constexpr auto flags_member = &EntityInternalAccess::flags_;
+        (entity.*flags_member).internal = internal;
+    }
+};
+
 class LgSwitch final : public switch_::Switch {
     void write_state(bool value) override {
         publish_state(value);
@@ -22,22 +34,29 @@ public:
             write_state(*state);
         }
     }
+    void mark_internal(bool internal) { this->flags_.internal = internal; }
 };
 
 class LgSelect final : public select::Select {
     void control(const std::string& value) override {
         if (this->current_option() != value) {
-            this->publish_state(value); 
+            this->publish_state(value);
         }
     }
+
+public:
+    void mark_internal(bool internal) { this->flags_.internal = internal; }
 };
 
 class LgNumber final : public number::Number {
     void control(float value) override {
         if (this->state != value) {
-            this->publish_state(value); 
+            this->publish_state(value);
         }
     }
+
+public:
+    void mark_internal(bool internal) { this->flags_.internal = internal; }
 };
 
 // The LG protocol always uses Celsius. The HA/ESPHome climate component internally
@@ -354,54 +373,54 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
             supported_traits_.set_supported_swing_modes(override_swing_modes);
 
             // Disable unsupported entities
-            vane_select_1_.set_internal(true);
-            vane_select_2_.set_internal(true);
-            vane_select_3_.set_internal(true);
-            vane_select_4_.set_internal(true);
+            vane_select_1_.mark_internal(true);
+            vane_select_2_.mark_internal(true);
+            vane_select_3_.mark_internal(true);
+            vane_select_4_.mark_internal(true);
 
             if (parse_capability(LgCapability::HAS_ONE_VANE)) {
-                vane_select_1_.set_internal(false);
+                vane_select_1_.mark_internal(false);
             } else if (parse_capability(LgCapability::HAS_TWO_VANES)) {
-                vane_select_1_.set_internal(false);
-                vane_select_2_.set_internal(false);
+                vane_select_1_.mark_internal(false);
+                vane_select_2_.mark_internal(false);
             } else if (parse_capability(LgCapability::HAS_FOUR_VANES)) {
-                vane_select_1_.set_internal(false);
-                vane_select_2_.set_internal(false);
-                vane_select_3_.set_internal(false);
-                vane_select_4_.set_internal(false);
+                vane_select_1_.mark_internal(false);
+                vane_select_2_.mark_internal(false);
+                vane_select_3_.mark_internal(false);
+                vane_select_4_.mark_internal(false);
             }
 
-            fan_speed_slow_.set_internal(true);
-            fan_speed_low_.set_internal(true);
-            fan_speed_medium_.set_internal(true);
-            fan_speed_high_.set_internal(true);
-            overheating_select_.set_internal(true);
+            fan_speed_slow_.mark_internal(true);
+            fan_speed_low_.mark_internal(true);
+            fan_speed_medium_.mark_internal(true);
+            fan_speed_high_.mark_internal(true);
+            overheating_select_.mark_internal(true);
 
             if (!slave_) {
                 if (parse_capability(LgCapability::HAS_ESP_VALUE_SETTING)) {
                     if (parse_capability(LgCapability::FAN_SLOW)) {
-                        fan_speed_slow_.set_internal(false);
+                        fan_speed_slow_.mark_internal(false);
                     }
                     if (parse_capability(LgCapability::FAN_LOW)) {
-                        fan_speed_low_.set_internal(false);
+                        fan_speed_low_.mark_internal(false);
                     }
                     if (parse_capability(LgCapability::FAN_MEDIUM)) {
-                        fan_speed_medium_.set_internal(false);
+                        fan_speed_medium_.mark_internal(false);
                     }
                     if (parse_capability(LgCapability::FAN_HIGH)) {
-                        fan_speed_high_.set_internal(false);
+                        fan_speed_high_.mark_internal(false);
                     }
                 }
                 if (parse_capability(LgCapability::OVERHEATING_SETTING)) {
-                    overheating_select_.set_internal(false);
+                    overheating_select_.mark_internal(false);
                 }
             }
-            purifier_.set_internal(!parse_capability(LgCapability::PURIFIER));
-            auto_dry_.set_internal(!parse_capability(LgCapability::AUTO_DRY));
-            auto_dry_active_.set_internal(!parse_capability(LgCapability::AUTO_DRY));
+            purifier_.mark_internal(!parse_capability(LgCapability::PURIFIER));
+            auto_dry_.mark_internal(!parse_capability(LgCapability::AUTO_DRY));
+            EntityInternalAccess::mark_internal(auto_dry_active_, !parse_capability(LgCapability::AUTO_DRY));
         }
 
-        internal_thermistor_.set_internal(slave_);
+        internal_thermistor_.mark_internal(slave_);
     }
 
 public:
@@ -1332,28 +1351,13 @@ private:
         static_assert(PipeTempTable[UINT8_MAX] == INT8_MIN);
 
         int8_t pipe_temp_in = PipeTempTable[buffer[3]];
-        if (pipe_temp_in == INT8_MIN) {
-            pipe_temp_in_.set_internal(true);
-        } else {
-            pipe_temp_in_.set_internal(false);
-            pipe_temp_in_.publish_state(pipe_temp_in);
-        }
+        pipe_temp_in_.publish_state(pipe_temp_in == INT8_MIN ? NAN : pipe_temp_in);
 
         int8_t pipe_temp_out = PipeTempTable[buffer[4]];
-        if (pipe_temp_out == INT8_MIN) {
-            pipe_temp_out_.set_internal(true);
-        } else {
-            pipe_temp_out_.set_internal(false);
-            pipe_temp_out_.publish_state(pipe_temp_out);
-        }
+        pipe_temp_out_.publish_state(pipe_temp_out == INT8_MIN ? NAN : pipe_temp_out);
 
         int8_t pipe_temp_mid = PipeTempTable[buffer[5]];
-        if (pipe_temp_mid == INT8_MIN) {
-            pipe_temp_mid_.set_internal(true);
-        } else {
-            pipe_temp_mid_.set_internal(false);
-            pipe_temp_mid_.publish_state(pipe_temp_mid);
-        }
+        pipe_temp_mid_.publish_state(pipe_temp_mid == INT8_MIN ? NAN : pipe_temp_mid);
     }
 
     void update() {
