@@ -9,6 +9,7 @@ namespace esphome::lg_controller {
 
 static constexpr size_t MIN_TEMP_SETPOINT = 16;
 static constexpr size_t MAX_TEMP_SETPOINT = 30;
+static constexpr const char *FAN_MODE_JET = "Jet";
 
 class LgSwitch final : public switch_::Switch {
     void write_state(bool value) override {
@@ -433,6 +434,8 @@ public:
         ESPPreferenceObject pref = global_preferences->make_preference<NVSStorage>(this->get_object_id_hash() ^ NVS_STORAGE_VERSION);
         pref.load(&nvs_storage_);
 
+        this->set_supported_custom_fan_modes({FAN_MODE_JET});
+
         auto restore = this->restore_state_();
         if (restore.has_value()) {
             restore->apply(this);
@@ -472,7 +475,10 @@ public:
             this->target_temperature = *call.get_target_temperature();
         }
         if (call.get_fan_mode().has_value()) {
-            this->fan_mode = *call.get_fan_mode();
+            this->set_fan_mode_(*call.get_fan_mode());
+        }
+        if (call.has_custom_fan_mode()) {
+            this->set_custom_fan_mode_(call.get_custom_fan_mode());
         }
         if (call.get_swing_mode().has_value()) {
             set_swing_mode(*call.get_swing_mode());
@@ -653,8 +659,9 @@ private:
                 break;
         }
         
-        // Fix: Check if fan_mode has a value before dereferencing
-        if (this->fan_mode.has_value()) {
+        if (this->has_custom_fan_mode()) {
+            b |= 7 << 5;
+        } else if (this->fan_mode.has_value()) {
             switch (this->fan_mode.value()) {
                 case climate::CLIMATE_FAN_LOW:
                     b |= 0 << 5;
@@ -1051,19 +1058,22 @@ private:
         uint8_t fan_val = b >> 5;
         switch (fan_val) {
             case 0:
-                this->fan_mode = climate::CLIMATE_FAN_LOW;
+                this->set_fan_mode_(climate::CLIMATE_FAN_LOW);
                 break;
             case 1:
-                this->fan_mode = climate::CLIMATE_FAN_MEDIUM;
+                this->set_fan_mode_(climate::CLIMATE_FAN_MEDIUM);
                 break;
             case 2:
-                this->fan_mode = climate::CLIMATE_FAN_HIGH;
+                this->set_fan_mode_(climate::CLIMATE_FAN_HIGH);
                 break;
             case 3:
-                this->fan_mode = climate::CLIMATE_FAN_AUTO;
+                this->set_fan_mode_(climate::CLIMATE_FAN_AUTO);
                 break;
             case 4:
-                this->fan_mode = climate::CLIMATE_FAN_QUIET;
+                this->set_fan_mode_(climate::CLIMATE_FAN_QUIET);
+                break;
+            case 7:
+                this->set_custom_fan_mode_(FAN_MODE_JET);
                 break;
             default:
                 ESP_LOGE(TAG, "received unexpected fan mode from AC (%u)", fan_val);
