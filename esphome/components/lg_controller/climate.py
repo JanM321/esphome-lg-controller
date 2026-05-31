@@ -2,7 +2,17 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import pins
 from esphome.components import binary_sensor, climate, number, select, sensor, switch, uart
-from esphome.const import CONF_ID, CONF_RX_PIN, CONF_INTERNAL
+from esphome.const import (
+    CONF_ID,
+    CONF_RX_PIN,
+    CONF_INTERNAL,
+    DEVICE_CLASS_ENERGY,
+    DEVICE_CLASS_POWER,
+    STATE_CLASS_MEASUREMENT,
+    STATE_CLASS_TOTAL_INCREASING,
+    UNIT_KILOWATT_HOURS,
+    UNIT_WATT,
+)
 
 CODEOWNERS = ["JanM321"]
 DEPENDENCIES = ["uart"]
@@ -37,6 +47,8 @@ CONF_ERROR_CODE = "error_code"
 CONF_PIPE_TEMP_IN = "pipe_temp_in"
 CONF_PIPE_TEMP_MID = "pipe_temp_mid"
 CONF_PIPE_TEMP_OUT = "pipe_temp_out"
+CONF_POWER_CONSUMPTION = "power_consumption"
+CONF_CURRENT_POWER = "current_power"
 
 CONF_DEFROST = "defrost"
 CONF_PREHEAT = "preheat"
@@ -75,6 +87,18 @@ CONFIG_SCHEMA = climate.climate_schema(LgController).extend(
         cv.Required(CONF_PIPE_TEMP_IN): sensor.sensor_schema(),
         cv.Required(CONF_PIPE_TEMP_MID): sensor.sensor_schema(),
         cv.Required(CONF_PIPE_TEMP_OUT): sensor.sensor_schema(),
+        cv.Optional(CONF_POWER_CONSUMPTION): sensor.sensor_schema(
+            unit_of_measurement=UNIT_KILOWATT_HOURS,
+            accuracy_decimals=1,
+            device_class=DEVICE_CLASS_ENERGY,
+            state_class=STATE_CLASS_TOTAL_INCREASING,
+        ),
+        cv.Optional(CONF_CURRENT_POWER): sensor.sensor_schema(
+            unit_of_measurement=UNIT_WATT,
+            accuracy_decimals=0,
+            device_class=DEVICE_CLASS_POWER,
+            state_class=STATE_CLASS_MEASUREMENT,
+        ),
 
         cv.Required(CONF_DEFROST): binary_sensor.binary_sensor_schema(),
         cv.Required(CONF_PREHEAT): binary_sensor.binary_sensor_schema(),
@@ -120,6 +144,14 @@ async def to_code(config):
     pipe_temp_in = await sensor.new_sensor(config[CONF_PIPE_TEMP_IN])
     pipe_temp_mid = await sensor.new_sensor(config[CONF_PIPE_TEMP_MID])
     pipe_temp_out = await sensor.new_sensor(config[CONF_PIPE_TEMP_OUT])
+    if CONF_POWER_CONSUMPTION in config:
+        power_consumption = await sensor.new_sensor(config[CONF_POWER_CONSUMPTION])
+    else:
+        power_consumption = cg.nullptr
+    if CONF_CURRENT_POWER in config:
+        current_power = await sensor.new_sensor(config[CONF_CURRENT_POWER])
+    else:
+        current_power = cg.nullptr
 
     defrost = await binary_sensor.new_binary_sensor(config[CONF_DEFROST])
     preheat = await binary_sensor.new_binary_sensor(config[CONF_PREHEAT])
@@ -135,6 +167,7 @@ async def to_code(config):
                            fan_speed_slow, fan_speed_low, fan_speed_medium, fan_speed_high,
                            sleep_timer,
                            error_code, pipe_temp_in, pipe_temp_mid, pipe_temp_out,
+                           power_consumption, current_power,
                            defrost, preheat, outdoor, auto_dry_active,
                            purifier, internal_thermistor, auto_dry,
                            config[CONF_FAHRENHEIT], config[CONF_IS_SLAVE_CONTROLLER])
