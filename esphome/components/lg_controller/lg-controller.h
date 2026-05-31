@@ -467,6 +467,13 @@ public:
     void control(const climate::ClimateCall &call) override {
         if (call.get_mode().has_value()) {
             this->mode = *call.get_mode();
+            if (this->mode == climate::CLIMATE_MODE_OFF) {
+                this->action = climate::CLIMATE_ACTION_OFF;
+            } else if (this->mode == climate::CLIMATE_MODE_FAN_ONLY) {
+                this->action = climate::CLIMATE_ACTION_FAN;
+            } else if (this->action == climate::CLIMATE_ACTION_OFF) {
+                this->action = climate::CLIMATE_ACTION_IDLE;
+            }
         }
         if (call.get_target_temperature().has_value()) {
             this->target_temperature = *call.get_target_temperature();
@@ -486,6 +493,46 @@ public:
     }
 
 private:
+    bool set_action_from_status_(bool outdoor_on, bool defrosting, uint8_t temperature_flags) {
+        climate::ClimateAction action = climate::CLIMATE_ACTION_IDLE;
+        if (this->mode == climate::CLIMATE_MODE_OFF) {
+            action = climate::CLIMATE_ACTION_OFF;
+        } else if (defrosting) {
+            action = climate::CLIMATE_ACTION_DEFROSTING;
+        } else if (this->mode == climate::CLIMATE_MODE_FAN_ONLY) {
+            action = climate::CLIMATE_ACTION_FAN;
+        } else if (!outdoor_on) {
+            action = climate::CLIMATE_ACTION_IDLE;
+        } else {
+            switch (this->mode) {
+                case climate::CLIMATE_MODE_COOL:
+                    action = climate::CLIMATE_ACTION_COOLING;
+                    break;
+                case climate::CLIMATE_MODE_DRY:
+                    action = climate::CLIMATE_ACTION_DRYING;
+                    break;
+                case climate::CLIMATE_MODE_HEAT:
+                    action = climate::CLIMATE_ACTION_HEATING;
+                    break;
+                case climate::CLIMATE_MODE_HEAT_COOL:
+                    if (temperature_flags & 0x40) {
+                        action = climate::CLIMATE_ACTION_COOLING;
+                    } else if (temperature_flags & 0x80) {
+                        action = climate::CLIMATE_ACTION_HEATING;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (this->action == action) {
+            return false;
+        }
+        this->action = action;
+        return true;
+    }
+
     // Sets position of vane index (1-4) to position (0-6).
     void set_vane_position(int index, int position) {
         if (index < 1 || index > 4) {
@@ -1009,10 +1056,16 @@ private:
         // changes we still have to send (or are sending) to the AC.
         if (pending_status_change_) {
             ESP_LOGD(TAG, "ignoring because pending change");
+            if (set_action_from_status_(outdoor_.state, defrost_.state, buffer[7])) {
+                publish_state();
+            }
             return;
         }
         if (pending_send_ == PendingSendKind::Status) {
             ESP_LOGD(TAG, "ignoring because pending send");
+            if (set_action_from_status_(outdoor_.state, defrost_.state, buffer[7])) {
+                publish_state();
+            }
             return;
         }
 
@@ -1104,6 +1157,7 @@ private:
             sleep_timer_.publish_state(minutes);
         }
 
+        set_action_from_status_(outdoor_.state, defrost_.state, buffer[7]);
         publish_state();
     }
 
@@ -1338,6 +1392,7 @@ private:
                 sleep_timer_.publish_state(0);
                 ignore_sleep_timer_callback_ = false;
                 this->mode = climate::CLIMATE_MODE_OFF;
+                this->action = climate::CLIMATE_ACTION_OFF;
                 pending_status_change_ = true;
                 publish_state();
             } else if (optional<uint32_t> minutes = get_sleep_timer_minutes()) {
