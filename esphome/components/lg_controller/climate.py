@@ -10,8 +10,8 @@ from esphome.const import (
     DEVICE_CLASS_POWER,
     STATE_CLASS_MEASUREMENT,
     STATE_CLASS_TOTAL_INCREASING,
+    UNIT_KILOWATT,
     UNIT_KILOWATT_HOURS,
-    UNIT_WATT,
 )
 
 CODEOWNERS = ["JanM321"]
@@ -94,8 +94,8 @@ CONFIG_SCHEMA = climate.climate_schema(LgController).extend(
             state_class=STATE_CLASS_TOTAL_INCREASING,
         ),
         cv.Optional(CONF_CURRENT_POWER): sensor.sensor_schema(
-            unit_of_measurement=UNIT_WATT,
-            accuracy_decimals=0,
+            unit_of_measurement=UNIT_KILOWATT,
+            accuracy_decimals=1,
             device_class=DEVICE_CLASS_POWER,
             state_class=STATE_CLASS_MEASUREMENT,
         ),

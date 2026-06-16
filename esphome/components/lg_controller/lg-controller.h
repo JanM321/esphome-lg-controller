@@ -1285,8 +1285,9 @@ private:
         }
     }
 
-    static float decode_decimal_nibbles_(const uint8_t* buffer, size_t offset, size_t length, float divisor) {
-        // Energy/power payloads use decimal nibbles rather than binary integers.
+    static float decode_power_nibbles_(const uint8_t* buffer, size_t offset, size_t length, float divisor) {
+        // Power payloads use LG's nibble format rather than binary integers. Some documented
+        // current-power examples contain A-F nibbles, so this intentionally is not strict BCD.
         uint32_t result = 0;
         for (size_t i = 0; i < length; i++) {
             result = result * 100 + ((buffer[offset + i] >> 4) & 0xF) * 10 + (buffer[offset + i] & 0xF);
@@ -1299,7 +1300,7 @@ private:
             return;
         }
         if (power_consumption_ != nullptr) {
-            power_consumption_->publish_state(decode_decimal_nibbles_(buffer, 3, 3, 10.0f));
+            power_consumption_->publish_state(decode_power_nibbles_(buffer, 3, 3, 10.0f));
         }
     }
 
@@ -1308,7 +1309,7 @@ private:
             return;
         }
         if (current_power_ != nullptr) {
-            current_power_->publish_state(decode_decimal_nibbles_(buffer, 2, 3, 1.0f));
+            current_power_->publish_state(decode_power_nibbles_(buffer, 2, 3, 1000.0f));
         }
     }
 

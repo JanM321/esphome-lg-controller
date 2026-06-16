@@ -120,12 +120,6 @@ climate:
       id: pipe_temperature_out
       icon: mdi:thermometer
       unit_of_measurement: "°C"
-    power_consumption:
-      name: Power Consumption
-      id: power_consumption
-    current_power:
-      name: Current Power
-      id: current_power
     defrost:
       name: Defrost
       id: defrost
