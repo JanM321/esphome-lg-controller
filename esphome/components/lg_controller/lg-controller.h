@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 #include "esphome.h"
 #include "esphome/components/uart/uart.h"
 
@@ -9,6 +11,10 @@ namespace esphome::lg_controller {
 
 static constexpr size_t MIN_TEMP_SETPOINT = 16;
 static constexpr size_t MAX_TEMP_SETPOINT = 30;
+
+bool float_equal(float a, float b) {
+    return std::abs(a - b) < 0.0001f;
+}
 
 class LgSwitch final : public switch_::Switch {
     void write_state(bool value) override {
@@ -34,7 +40,7 @@ class LgSelect final : public select::Select {
 
 class LgNumber final : public number::Number {
     void control(float value) override {
-        if (this->state != value) {
+        if (!float_equal(this->state, value)) {
             this->publish_state(value); 
         }
     }
@@ -176,9 +182,17 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
     // Last received 0xCB message.
     uint8_t last_recv_type_b_settings_[MsgLen] = {};
 
+    // Track repeated status messages to handle edge case with
+    // corrupted messages.
+    uint8_t repeated_status_[MsgLen] = {};
+    uint8_t repeated_status_count_ = 0;
+    static const uint8_t repeated_status_threshold_ = 2;
+
     uint8_t send_buf_[MsgLen] = {};
     uint32_t last_sent_status_millis_ = 0;
     uint32_t last_sent_recv_type_b_millis_ = 0;
+    uint32_t last_write_millis_ = 0;
+    uint32_t last_line_busy_millis_ = 0;
 
     enum class PendingSendKind : uint8_t { None, Status, TypeA, TypeB };
     PendingSendKind pending_send_ = PendingSendKind::None;
@@ -186,8 +200,12 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
     bool pending_status_change_ = false;
     bool pending_type_a_settings_change_ = false;
     bool pending_type_b_settings_change_ = false;
+    bool pending_type_b_timed_message_ = false;
+    bool operation_mode_changed_ = false;
+    bool user_changed_settings_ = false;
 
     bool is_initializing_ = true;
+    bool waiting_for_first_status = true;
 
     uint8_t vane_position_[4] = {0,0,0,0};
     uint8_t fan_speed_[4] = {0,0,0,0};
@@ -195,7 +213,7 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
 
     optional<uint32_t> sleep_timer_target_millis_{};
     bool active_reservation_ = false;
-    bool ignore_sleep_timer_callback_ = false;
+    bool ignore_callbacks_ = false;
 
     uint32_t NVS_STORAGE_VERSION = 2843654U; // Change version if the NVSStorage struct changes
     struct NVSStorage {
@@ -414,18 +432,41 @@ public:
         });
 
         purifier_.add_on_state_callback([this](bool) {
+            if (ignore_callbacks_) {
+                return;
+            }
+            user_changed_settings_ = true;
             pending_status_change_ = true;
         });
         internal_thermistor_.add_on_state_callback([this](bool) {
+            if (ignore_callbacks_) {
+                return;
+            }
+            user_changed_settings_ = true;
             pending_status_change_ = true;
         });
         auto_dry_.add_on_state_callback([this](bool) {
+            if (ignore_callbacks_) {
+                return;
+            }
             pending_type_a_settings_change_ = true;
         });
     }
 
     float get_setup_priority() const override {
         return esphome::setup_priority::BUS;
+    }
+
+    // Return the value after a roundtrip through the LG system so we
+    // store the value we expect to hear back.
+    float get_roundtrip_target_temperature(float target) {
+        if (fahrenheit_) {
+            target = TempConversion::lgcelsius_to_celsius
+                (TempConversion::celsius_to_lgcelsius(target));
+        } else {
+            target = round(target * 2) / 2;
+        }
+        return target;
     }
 
     void setup() override {
@@ -436,6 +477,8 @@ public:
         auto restore = this->restore_state_();
         if (restore.has_value()) {
             restore->apply(this);
+            this->target_temperature = get_roundtrip_target_temperature
+                (this->target_temperature);
         } else {
             this->mode = climate::CLIMATE_MODE_OFF;
             this->target_temperature = 20;
@@ -467,9 +510,11 @@ public:
     void control(const climate::ClimateCall &call) override {
         if (call.get_mode().has_value()) {
             this->mode = *call.get_mode();
+            operation_mode_changed_ = true;
         }
         if (call.get_target_temperature().has_value()) {
-            this->target_temperature = *call.get_target_temperature();
+            this->target_temperature = get_roundtrip_target_temperature
+                (*call.get_target_temperature());
         }
         if (call.get_fan_mode().has_value()) {
             this->fan_mode = *call.get_fan_mode();
@@ -477,8 +522,95 @@ public:
         if (call.get_swing_mode().has_value()) {
             set_swing_mode(*call.get_swing_mode());
         }
+        this->user_changed_settings_ = true;
         this->pending_status_change_ = true;
         this->publish_state();
+    }
+
+    void loop() override {
+        uint32_t millis_now = millis();
+
+        // Track if the RX pin is idle for at least 500 ms to avoid collisions on the bus as much
+        // as possible. If there is still a collision, we'll likely both start sending at
+        // approximately the same time and the message will hopefully be corrupt (and ignored)
+        // anyway. Else the pending_send_/send_buf_ mechanism should catch it and we try again.
+        //
+        // Note: using digital_read is *much* better for this than using UARTDevice because that
+        // interface has significant delays. It has to wait for a full byte to arrive and this
+        // takes about 9-10 ms with our slow baud rate. There are also various buffers and
+        // timeouts before incoming bytes reach us.
+        if (UARTDevice::available() > 0 || !rx_pin_.digital_read()) {
+            this->last_line_busy_millis_ = millis_now;
+        }
+
+        bool bytes_received = false;
+        while (UARTDevice::available() > 0) {
+            if (!UARTDevice::read_byte(&recv_buf_[recv_buf_len_])) {
+                break;
+            }
+            bytes_received = true;
+            recv_buf_len_++;
+            if (recv_buf_len_ == MsgLen) {
+                process_message(recv_buf_);
+                recv_buf_len_ = 0;
+            }
+        }
+
+        if (bytes_received) {
+            last_recv_millis_ = millis_now;
+        }
+
+        if (recv_buf_len_ > 0) {
+            // A byte takes about 96 milliseconds to transmit.
+            if (millis_now - last_recv_millis_ > 150) {
+                ESP_LOGE(TAG, "discarding incomplete data %s",
+                         format_hex_pretty(recv_buf_, recv_buf_len_).c_str());
+                recv_buf_len_ = 0;
+            }
+            return;
+        }
+
+        // If we did not receive the message we sent last time, try to send it again.
+        // Ignore this when we're initializing because the unit then immediately responds by
+        // sending a lot of messages and this introduces a delay.
+        if (pending_send_ != PendingSendKind::None &&
+            (millis_now - last_write_millis_ > 2000)) {
+            ESP_LOGE(TAG, "did not receive message we just sent");
+            switch (pending_send_) {
+                case PendingSendKind::Status:
+                    pending_status_change_ = true;
+                    break;
+                case PendingSendKind::TypeA:
+                    pending_type_a_settings_change_ = true;
+                    break;
+                case PendingSendKind::TypeB:
+                    pending_type_b_settings_change_ = true;
+                    break;
+                case PendingSendKind::None:
+                    ESP_LOGE(TAG, "unreachable");
+                    break;
+            }
+            pending_send_ = PendingSendKind::None;
+            return;
+        }
+
+        // Send if there's a pending message.
+        if (pending_send_ == PendingSendKind::None &&
+            (millis_now - last_line_busy_millis_ > 500) &&
+            !(slave_ && is_initializing_)) {
+
+            if (pending_type_a_settings_change_) {
+                send_type_a_settings_message();
+            } else if (pending_type_b_settings_change_) {
+                send_type_b_settings_message(/* timed = */ false);
+            } else if (pending_type_b_timed_message_) {
+                send_type_b_settings_message(/* timed = */ true);
+                pending_type_b_timed_message_ = false;
+            } else if (pending_status_change_) {
+                send_status_message();
+            }
+
+        }
     }
 
     climate::ClimateTraits traits() override {
@@ -547,7 +679,7 @@ private:
     }
 
     void set_sleep_timer(int minutes) {
-        if (ignore_sleep_timer_callback_) {
+        if (ignore_callbacks_) {
             return;
         }
         // 0 clears the timer. Accept max 7 hours.
@@ -563,6 +695,7 @@ private:
             sleep_timer_target_millis_.reset();
             active_reservation_ = false;
         }
+        user_changed_settings_ = true;
         pending_status_change_ = true;
     }
 
@@ -624,8 +757,14 @@ private:
 
         // Byte 1: changed flag (0x1), power on (0x2), mode (0x1C), fan speed (0x70).
         uint8_t b = 0;
-        if (pending_status_change_) {
+        if (user_changed_settings_) {
             b |= 0x1;
+
+            // Prevent an incoming status message received shortly
+            // after sending this outgoing message from immediately
+            // taking effect if it is outdated.
+            repeated_status_count_ = 0;
+            memset(repeated_status_, 0, MsgLen);
         }
         switch (this->mode) {
             case climate::CLIMATE_MODE_COOL:
@@ -730,7 +869,7 @@ private:
         // Byte 5. Unchanged except for the low bit which indicates the target temperature has a
         // 0.5 fractional part.
         send_buf_[5] = last_recv_status_[5] & ~0x1;
-        if (target - uint8_t(target) == 0.5) {
+        if (float_equal(target - uint8_t(target), 0.5)) {
             send_buf_[5] |= 0x1;
         }
 
@@ -782,10 +921,11 @@ private:
 
         ESP_LOGD(TAG, "sending %s", format_hex_pretty(send_buf_, MsgLen).c_str());
         UARTDevice::write_array(send_buf_, MsgLen);
+        last_write_millis_ = millis();
 
         pending_status_change_ = false;
         pending_send_ = PendingSendKind::Status;
-        last_sent_status_millis_ = millis();
+        last_sent_status_millis_ = last_write_millis_;
 
         // If we sent an updated temperature to the AC, update temperature in HA too.
         // Slave controller temperature sensor is ignored.
@@ -794,7 +934,7 @@ private:
             if (fahrenheit_) {
                 ha_temp = TempConversion::lgcelsius_to_celsius(ha_temp);
             }
-            if (this->current_temperature != ha_temp) {
+            if (!float_equal(this->current_temperature, ha_temp)) {
                 this->current_temperature = ha_temp;
                 publish_state();
             }
@@ -835,6 +975,7 @@ private:
 
         ESP_LOGD(TAG, "sending %s", format_hex_pretty(send_buf_, MsgLen).c_str());
         UARTDevice::write_array(send_buf_, MsgLen);
+        last_write_millis_ = millis();
 
         pending_type_a_settings_change_ = false;
         pending_send_ = PendingSendKind::TypeA;
@@ -870,13 +1011,14 @@ private:
 
         ESP_LOGD(TAG, "sending %s", format_hex_pretty(send_buf_, MsgLen).c_str());
         UARTDevice::write_array(send_buf_, MsgLen);
+        last_write_millis_ = millis();
 
         pending_type_b_settings_change_ = false;
         pending_send_ = PendingSendKind::TypeB;
-        last_sent_recv_type_b_millis_ = millis();
+        last_sent_recv_type_b_millis_ = last_write_millis_;
     }
 
-    void process_message(const uint8_t* buffer, bool* had_error) {
+    void process_message(const uint8_t* buffer) {
         ESP_LOGD(TAG, "received %s", format_hex_pretty(buffer, MsgLen).c_str());
 
         if (calc_checksum(buffer) != buffer[12]) {
@@ -888,12 +1030,24 @@ private:
                 return;
             }
             ESP_LOGE(TAG, "invalid checksum %s", format_hex_pretty(buffer, MsgLen).c_str());
-            *had_error = true;
             return;
         }
 
         if (pending_send_ != PendingSendKind::None && memcmp(send_buf_, buffer, MsgLen) == 0) {
             ESP_LOGD(TAG, "verified send");
+
+            // Queue a Type A message after verifying sending the
+            // status message because some units set the vane position
+            // to the default setting after changing swing mode or
+            // operation mode.
+            if (pending_send_ == PendingSendKind::Status) {
+                if (operation_mode_changed_) {
+                    pending_type_a_settings_change_ = true;
+                    operation_mode_changed_ = false;
+                }
+                user_changed_settings_ = false;
+            }
+
             pending_send_ = PendingSendKind::None;
             return;
         }
@@ -924,7 +1078,7 @@ private:
 
         switch (buffer[0] & 0b111) {
             case 0: // 0xC8/A8/28
-                process_status_message(*sender, buffer, had_error);
+                process_status_message(*sender, buffer);
                 break;
             case 1: // 0xC9
                 process_capabilities_message(*sender, buffer);
@@ -940,22 +1094,208 @@ private:
         }
     }
 
-    void process_status_message(MessageSender sender, const uint8_t* buffer, bool* had_error) {
-        // If we just had a failure, ignore this messsage because it might be invalid too.
-        if (*had_error) {
-            ESP_LOGE(TAG, "ignoring due to previous error %s",
-                     format_hex_pretty(buffer, MsgLen).c_str());
+    void process_status_message(MessageSender sender, const uint8_t* buffer) {
+        // Track instances of repeated status messages.  If the same
+        // status message arrives enough times without the changed
+        // settings bit set, accept it anyway, since a previous status
+        // message with the changed settings bit set may have been
+        // corrupted.
+        if (memcmp(repeated_status_, buffer, MsgLen) == 0) {
+            if (repeated_status_count_ < 255) {
+                repeated_status_count_++;
+            };
+        } else {
+            memcpy(repeated_status_, buffer, MsgLen);
+            repeated_status_count_ = 1;
+        }
+
+        // To protect against corrupted messages, only allow settings
+        // changes if this is the first status message received from
+        // the LG unit, or if the settings changed bit is set.  If
+        // settings are unexpectedly changed, ignore the entire
+        // message.  However, if the same message without the settings
+        // changed bit arrives sufficiently many times, accept it
+        // anyway since the original change message may have been
+        // corrupted.
+        bool repeated_status_override =
+            repeated_status_count_ >= repeated_status_threshold_;
+        bool settings_changed = (buffer[1] & 0x01) != 0;
+        bool changes_allowed = waiting_for_first_status || settings_changed ||
+            repeated_status_override;
+
+        uint8_t b = buffer[1];
+        climate::ClimateMode new_mode;
+        if ((b & 0x2) == 0) {
+            new_mode = climate::CLIMATE_MODE_OFF;
+        } else {
+            uint8_t mode_val = (b >> 2) & 0b111;
+            switch (mode_val) {
+                case 0:
+                    new_mode = climate::CLIMATE_MODE_COOL;
+                    break;
+                case 1:
+                    new_mode = climate::CLIMATE_MODE_DRY;
+                    break;
+                case 2:
+                    new_mode = climate::CLIMATE_MODE_FAN_ONLY;
+                    break;
+                case 3:
+                    new_mode = climate::CLIMATE_MODE_HEAT_COOL;
+                    break;
+                case 4:
+                    new_mode = climate::CLIMATE_MODE_HEAT;
+                    break;
+                default:
+                    ESP_LOGE(TAG, "received invalid operation mode from AC (%u)", mode_val);
+                    return;
+            }
+        }
+
+        uint8_t fan_val = b >> 5;
+        climate::ClimateFanMode new_fan_mode;
+        switch (fan_val) {
+            case 0:
+                new_fan_mode = climate::CLIMATE_FAN_LOW;
+                break;
+            case 1:
+                new_fan_mode = climate::CLIMATE_FAN_MEDIUM;
+                break;
+            case 2:
+                new_fan_mode = climate::CLIMATE_FAN_HIGH;
+                break;
+            case 3:
+                new_fan_mode = climate::CLIMATE_FAN_AUTO;
+                break;
+            case 4:
+                new_fan_mode = climate::CLIMATE_FAN_QUIET;
+                break;
+            default:
+                ESP_LOGE(TAG, "received unexpected fan mode from AC (%u)", fan_val);
+                return;
+        }
+
+        bool horiz_swing = buffer[2] & 0x40;
+        bool vert_swing = buffer[2] & 0x80;
+        climate::ClimateSwingMode new_swing_mode;
+        if (horiz_swing && vert_swing) {
+            new_swing_mode = climate::CLIMATE_SWING_BOTH;
+        } else if (horiz_swing) {
+            new_swing_mode = climate::CLIMATE_SWING_HORIZONTAL;
+        } else if (vert_swing) {
+            new_swing_mode = climate::CLIMATE_SWING_VERTICAL;
+        } else {
+            new_swing_mode = climate::CLIMATE_SWING_OFF;
+        }
+
+        float target = float((buffer[6] & 0xf) + 15);
+        if (buffer[5] & 0x1) {
+            target += 0.5;
+        }
+        if (fahrenheit_) {
+            target = TempConversion::lgcelsius_to_celsius(target);
+        }
+
+        bool new_purifier = buffer[2] & 0x4;
+        bool new_active_reservation = buffer[3] & 0x10;
+
+        // Make all the changes if changes are allowed.
+        bool mode_changed = this->mode != new_mode;
+        bool fan_mode_changed = this->fan_mode != new_fan_mode;
+        bool swing_mode_changed = this->swing_mode != new_swing_mode;
+        bool set_temperature_changed =
+            !float_equal(this->target_temperature, target);
+        bool purifier_changed = purifier_.state != new_purifier;
+        bool reservation_changed = active_reservation_ != new_active_reservation;
+        // Don't update our settings if we have a pending change/send,
+        // because else we overwrite changes we still have to send (or
+        // are sending) to the AC.
+        if (user_changed_settings_ &&
+            (pending_status_change_ ||
+             pending_send_ == PendingSendKind::Status)) {
+            ESP_LOGD(TAG, "ignoring incoming settings changes because "
+                     "of an outgoing pending change");
             return;
         }
 
-        // Consider slave controller initialized if we received a status message from the other
-        // controller or the unit.
+        if (changes_allowed) {
+            if (mode_changed || fan_mode_changed || swing_mode_changed ||
+                set_temperature_changed || purifier_changed ||
+                reservation_changed) {
+
+                if (!settings_changed && repeated_status_override) {
+                    ESP_LOGW(TAG, "accepting settings change without "
+                             "changed bit set after the same status "
+                             "message has been received consecutively "
+                             "%d times", repeated_status_count_);
+                }
+
+                this->mode = new_mode;
+                this->fan_mode = new_fan_mode;
+                if (swing_mode_changed) {
+                    // Avoid calling set_swing_mode unless the swing
+                    // mode has actually changed, since it sends a
+                    // 0xAA message.
+                    set_swing_mode(new_swing_mode);
+                }
+                this->target_temperature = target;
+                ignore_callbacks_ = true;
+                purifier_.publish_state(buffer[2] & 0x4);
+                ignore_callbacks_ = false;
+                active_reservation_ = buffer[3] & 0x10;
+            }
+        } else {
+            std::vector<std::string> changes;
+            if (mode_changed) {
+                changes.push_back("mode");
+            }
+            if (fan_mode_changed) {
+                changes.push_back("fan mode");
+            }
+            if (swing_mode_changed) {
+                changes.push_back("swing mode");
+            }
+            if (set_temperature_changed) {
+                changes.push_back("set temperature");
+            }
+            if (purifier_changed) {
+                changes.push_back("purifier");
+            }
+            if (reservation_changed) {
+                changes.push_back("timer reservation");
+            }
+
+            if (changes.size() > 0) {
+                std::string change_str;
+                bool first = true;
+                for (const std::string& change : changes) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        change_str += ", ";
+                    }
+                    change_str += change;
+                }
+
+                const char* times = "time";
+                if (repeated_status_count_ > 1) {
+                    times = "times";
+                }
+                ESP_LOGE(TAG, "ignoring status message with unexpected "
+                         "changes without changed bit set: %s; "
+                         "exact message received consecutively %d %s "
+                         "(will be accepted after %d times)",
+                         change_str.c_str(), repeated_status_count_,
+                         times, repeated_status_threshold_);
+                return;
+            }
+        }
+
+        // Consider slave controller initialized if we received a
+        // status message from the other controller or the unit.
         if (slave_) {
             is_initializing_ = false;
         }
-
-        // Handle simple input sensors first. These are safe to update even if we have a pending
-        // change.
+        waiting_for_first_status = false;
 
         defrost_.publish_state(buffer[3] & 0x4);
         preheat_.publish_state(buffer[3] & 0x8);
@@ -999,110 +1339,25 @@ private:
             if (fahrenheit_) {
                 room_temp = TempConversion::lgcelsius_to_celsius(room_temp);
             }
-            if (this->current_temperature != room_temp) {
+            if (!float_equal(this->current_temperature, room_temp)) {
                 this->current_temperature = room_temp;
                 publish_state();
             }
-        }
-
-        // Don't update our settings if we have a pending change/send, because else we overwrite
-        // changes we still have to send (or are sending) to the AC.
-        if (pending_status_change_) {
-            ESP_LOGD(TAG, "ignoring because pending change");
-            return;
-        }
-        if (pending_send_ == PendingSendKind::Status) {
-            ESP_LOGD(TAG, "ignoring because pending send");
-            return;
         }
 
         if (sender != MessageSender::Slave) {
             memcpy(last_recv_status_, buffer, MsgLen);
         }
 
-        uint8_t b = buffer[1];
-        if ((b & 0x2) == 0) {
-            this->mode = climate::CLIMATE_MODE_OFF;
-        } else {
-            uint8_t mode_val = (b >> 2) & 0b111;
-            switch (mode_val) {
-                case 0:
-                    this->mode = climate::CLIMATE_MODE_COOL;
-                    break;
-                case 1:
-                    this->mode = climate::CLIMATE_MODE_DRY;
-                    break;
-                case 2:
-                    this->mode = climate::CLIMATE_MODE_FAN_ONLY;
-                    break;
-                case 3:
-                    this->mode = climate::CLIMATE_MODE_HEAT_COOL;
-                    break;
-                case 4:
-                    this->mode = climate::CLIMATE_MODE_HEAT;
-                    break;
-                default:
-                    ESP_LOGE(TAG, "received invalid operation mode from AC (%u)", mode_val);
-                    *had_error = true;
-                    return;
-            }
-        }
-
-        uint8_t fan_val = b >> 5;
-        switch (fan_val) {
-            case 0:
-                this->fan_mode = climate::CLIMATE_FAN_LOW;
-                break;
-            case 1:
-                this->fan_mode = climate::CLIMATE_FAN_MEDIUM;
-                break;
-            case 2:
-                this->fan_mode = climate::CLIMATE_FAN_HIGH;
-                break;
-            case 3:
-                this->fan_mode = climate::CLIMATE_FAN_AUTO;
-                break;
-            case 4:
-                this->fan_mode = climate::CLIMATE_FAN_QUIET;
-                break;
-            default:
-                ESP_LOGE(TAG, "received unexpected fan mode from AC (%u)", fan_val);
-                *had_error = true;
-                return;
-        }
-
-        purifier_.publish_state(buffer[2] & 0x4);
-
-        bool horiz_swing = buffer[2] & 0x40;
-        bool vert_swing = buffer[2] & 0x80;
-        if (horiz_swing && vert_swing) {
-            set_swing_mode(climate::CLIMATE_SWING_BOTH);
-        } else if (horiz_swing) {
-            set_swing_mode(climate::CLIMATE_SWING_HORIZONTAL);
-        } else if (vert_swing) {
-            set_swing_mode(climate::CLIMATE_SWING_VERTICAL);
-        } else {
-            set_swing_mode(climate::CLIMATE_SWING_OFF);
-        }
-
-        float target = float((buffer[6] & 0xf) + 15);
-        if (buffer[5] & 0x1) {
-            target += 0.5;
-        }
-        if (fahrenheit_) {
-            target = TempConversion::lgcelsius_to_celsius(target);
-        }
-        this->target_temperature = target;
-
-        active_reservation_ = buffer[3] & 0x10;
-
         // Set or clear sleep timer.
+        ignore_callbacks_ = true;
         if (sleep_timer_target_millis_.has_value() && !active_reservation_) {
             sleep_timer_.publish_state(0);
         } else if (((buffer[8] >> 3) & 0x7) == 3) {
             uint32_t minutes = (uint32_t(buffer[8] & 0x7) << 8) | buffer[9];
             sleep_timer_.publish_state(minutes);
         }
+        ignore_callbacks_ = false;
 
         publish_state();
     }
@@ -1187,7 +1442,9 @@ private:
             ESP_LOGE(TAG, "Unexpected vane 4 position: %u", vane4);
         }
 
+        ignore_callbacks_ = true;
         auto_dry_.publish_state(buffer[11] & 0x8);
+        ignore_callbacks_ = false;
 
         if (sender != MessageSender::Slave) {
             // Handle fan speed 0 (slow) change
@@ -1274,57 +1531,6 @@ private:
     }
 
     void update() {
-        ESP_LOGD(TAG, "update");
-
-        bool had_error = false;
-        while (UARTDevice::available() > 0) {
-            if (!UARTDevice::read_byte(&recv_buf_[recv_buf_len_])) {
-                break;
-            }
-            last_recv_millis_ = millis();
-            recv_buf_len_++;
-            if (recv_buf_len_ == MsgLen) {
-                process_message(recv_buf_, &had_error);
-                recv_buf_len_ = 0;
-            }
-        }
-
-        // If we did not receive the message we sent last time, try to send it again next time.
-        // Ignore this when we're initializing because the unit then immediately responds by
-        // sending a lot of messages and this introduces a delay.
-        if (pending_send_ != PendingSendKind::None && !is_initializing_) {
-            ESP_LOGE(TAG, "did not receive message we just sent");
-            switch (pending_send_) {
-                case PendingSendKind::Status:
-                    pending_status_change_ = true;
-                    break;
-                case PendingSendKind::TypeA:
-                    pending_type_a_settings_change_ = true;
-                    break;
-                case PendingSendKind::TypeB:
-                    pending_type_b_settings_change_ = true;
-                    break;
-                case PendingSendKind::None:
-                    ESP_LOGE(TAG, "unreachable");
-                    break;
-            }
-            pending_send_ = PendingSendKind::None;
-            return;
-        }
-
-        if (recv_buf_len_ > 0) {
-            if (millis() - last_recv_millis_ > 15 * 1000) {
-                ESP_LOGE(TAG, "discarding incomplete data %s",
-                         format_hex_pretty(recv_buf_, recv_buf_len_).c_str());
-                recv_buf_len_ = 0;
-            }
-            return;
-        }
-
-        if (had_error) {
-            return;
-        }
-
         uint32_t millis_now = millis();
 
         // Handle sleep timer.
@@ -1334,89 +1540,34 @@ private:
                 ESP_LOGD(TAG, "Turning off for sleep timer");
                 sleep_timer_target_millis_.reset();
                 active_reservation_= false;
-                ignore_sleep_timer_callback_ = true;
+                ignore_callbacks_ = true;
                 sleep_timer_.publish_state(0);
-                ignore_sleep_timer_callback_ = false;
+                ignore_callbacks_ = false;
                 this->mode = climate::CLIMATE_MODE_OFF;
                 pending_status_change_ = true;
                 publish_state();
             } else if (optional<uint32_t> minutes = get_sleep_timer_minutes()) {
-                if (sleep_timer_.state != *minutes) {
-                    ignore_sleep_timer_callback_ = true;
+                if (!float_equal(sleep_timer_.state, *minutes)) {
+                    ignore_callbacks_ = true;
                     sleep_timer_.publish_state(*minutes);
-                    ignore_sleep_timer_callback_ = false;
+                    ignore_callbacks_ = false;
                 }
             }
         }
 
         if (slave_ && is_initializing_) {
             ESP_LOGD(TAG, "Not sending, waiting for other controller or unit to send first");
-            return;
         }
 
-        // Make sure the RX pin is idle for at least 500 ms to avoid collisions on the bus as much
-        // as possible. If there is still a collision, we'll likely both start sending at
-        // approximately the same time and the message will hopefully be corrupt (and ignored)
-        // anyway. Else the pending_send_/send_buf_ mechanism should catch it and we try again.
-        //
-        // Note: using digital_read is *much* better for this than using UARTDevice because that
-        // interface has significant delays. It has to wait for a full byte to arrive and this
-        // takes about 9-10 ms with our slow baud rate. There are also various buffers and
-        // timeouts before incoming bytes reach us.
-        //
-        // 500 ms might be overkill, but the device usually sends the same message twice with a
-        // short delay (about 200 ms?) between them so let's not send there either to avoid
-        // collisions.
-        auto check_can_send = [&]() -> bool {
-            while (true) {
-                if (UARTDevice::available() > 0 || !rx_pin_.digital_read()) {
-                    ESP_LOGD(TAG, "line busy, not sending yet");
-                    return false;
-                }
-                if (millis() - millis_now > 500) {
-                    return true;
-                }
-                delay(5);
-            }
-        };
-
-        if (pending_type_a_settings_change_) {
-            if (check_can_send()) {
-                send_type_a_settings_message();
-            }
-            return;
-        }
-        if (pending_type_b_settings_change_) {
-            if (check_can_send()) {
-                send_type_b_settings_message(/* timed = */ false);
-            }
-            return;
-        }
-        // Send a status message if there is a pending change.
-        // Additionally, queue a Type A message after sending the status message because some
-        // units set the vane position to the default setting after changing swing mode or
-        // operation mode.
-        if (pending_status_change_) {
-            if (check_can_send()) {
-                send_status_message();
-                pending_type_a_settings_change_ = true;
-            }
-            return;
-        }
         // Send an AB message every 10 minutes to request pipe temperature values.
         if (!slave_ && millis_now - last_sent_recv_type_b_millis_ > 10 * 60 * 1000) {
-            if (check_can_send()) {
-                send_type_b_settings_message(/* timed = */ true);
-            }
-            return;
+            pending_type_b_timed_message_ = true;
         }
+
         // Send a status message every 20 seconds.
         // Slave controllers only send a status message when settings are changed.
         if (!slave_ && millis_now - last_sent_status_millis_ > 20 * 1000) {
-            if (check_can_send()) {
-                send_status_message();
-            }
-            return;
+            pending_status_change_ = true;
         }
     }
 };
