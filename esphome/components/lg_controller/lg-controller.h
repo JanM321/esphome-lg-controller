@@ -153,6 +153,8 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
     esphome::sensor::Sensor& pipe_temp_in_;
     esphome::sensor::Sensor& pipe_temp_mid_;
     esphome::sensor::Sensor& pipe_temp_out_;
+    esphome::sensor::Sensor* power_consumption_;
+    esphome::sensor::Sensor* current_power_;
     esphome::binary_sensor::BinarySensor& defrost_;
     esphome::binary_sensor::BinarySensor& preheat_;
     esphome::binary_sensor::BinarySensor& outdoor_;
@@ -347,6 +349,8 @@ public:
                  sensor::Sensor* pipe_temp_in,
                  sensor::Sensor* pipe_temp_mid,
                  sensor::Sensor* pipe_temp_out,
+                 sensor::Sensor* power_consumption,
+                 sensor::Sensor* current_power,
                  binary_sensor::BinarySensor* defrost,
                  binary_sensor::BinarySensor* preheat,
                  binary_sensor::BinarySensor* outdoor,
@@ -371,6 +375,8 @@ public:
         pipe_temp_in_(*pipe_temp_in),
         pipe_temp_mid_(*pipe_temp_mid),
         pipe_temp_out_(*pipe_temp_out),
+        power_consumption_(power_consumption),
+        current_power_(current_power),
         defrost_(*defrost),
         preheat_(*preheat),
         outdoor_(*outdoor),
@@ -935,6 +941,12 @@ private:
             case 3: // 0xCB/AB/2B
                 process_type_b_settings_message(*sender, buffer);
                 break;
+            case 4: // 0xCC/AC/2C
+                process_type_c_status_message(*sender, buffer);
+                break;
+            case 7: // 0xCF/AF/2F
+                process_type_f_status_message(*sender, buffer);
+                break;
             default:
                 return;
         }
@@ -1270,6 +1282,34 @@ private:
         int8_t pipe_temp_mid = PipeTempTable[buffer[5]];
         if (pipe_temp_mid != INT8_MIN) {
             pipe_temp_mid_.publish_state(pipe_temp_mid);
+        }
+    }
+
+    static float decode_power_nibbles_(const uint8_t* buffer, size_t offset, size_t length, float divisor) {
+        // Power payloads use LG's nibble format rather than binary integers. Some documented
+        // current-power examples contain A-F nibbles, so this intentionally is not strict BCD.
+        uint32_t result = 0;
+        for (size_t i = 0; i < length; i++) {
+            result = result * 100 + ((buffer[offset + i] >> 4) & 0xF) * 10 + (buffer[offset + i] & 0xF);
+        }
+        return result / divisor;
+    }
+
+    void process_type_c_status_message(MessageSender sender, const uint8_t* buffer) {
+        if (sender != MessageSender::Unit) {
+            return;
+        }
+        if (power_consumption_ != nullptr) {
+            power_consumption_->publish_state(decode_power_nibbles_(buffer, 3, 3, 10.0f));
+        }
+    }
+
+    void process_type_f_status_message(MessageSender sender, const uint8_t* buffer) {
+        if (sender != MessageSender::Unit) {
+            return;
+        }
+        if (current_power_ != nullptr) {
+            current_power_->publish_state(decode_power_nibbles_(buffer, 2, 3, 1000.0f));
         }
     }
 
