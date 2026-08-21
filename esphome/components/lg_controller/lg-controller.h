@@ -188,6 +188,7 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
     bool pending_type_b_settings_change_ = false;
 
     bool is_initializing_ = true;
+    bool startup_flush_done_ = false;
 
     uint8_t vane_position_[4] = {0,0,0,0};
     uint8_t fan_speed_[4] = {0,0,0,0};
@@ -1276,6 +1277,22 @@ private:
     void update() {
         ESP_LOGD(TAG, "update");
 
+        // On the very first update() call, re-flush the UART buffer to discard
+        // bytes that accumulated during the 10-second setup→update gap.
+        // This is the primary cause of byte framing misalignment.
+        if (!startup_flush_done_) {
+            int flushed = 0;
+            while (UARTDevice::available() > 0) {
+                uint8_t discard;
+                if (!UARTDevice::read_byte(&discard)) break;
+                flushed++;
+            }
+            recv_buf_len_ = 0;
+            startup_flush_done_ = true;
+            ESP_LOGI(TAG, "Startup: flushed %d bytes from UART buffer before first read", flushed);
+            return;  // skip this update cycle, start clean next time
+        }
+
         bool had_error = false;
         while (UARTDevice::available() > 0) {
             if (!UARTDevice::read_byte(&recv_buf_[recv_buf_len_])) {
@@ -1284,8 +1301,18 @@ private:
             last_recv_millis_ = millis();
             recv_buf_len_++;
             if (recv_buf_len_ == MsgLen) {
-                process_message(recv_buf_, &had_error);
-                recv_buf_len_ = 0;
+                if (calc_checksum(recv_buf_) == recv_buf_[MsgLen - 1]) {
+                    // Valid frame — process normally
+                    process_message(recv_buf_, &had_error);
+                    recv_buf_len_ = 0;
+                } else {
+                    // Checksum mismatch — likely misaligned.
+                    // Drop the oldest byte, slide remaining 12 left.
+                    // The next UART byte will fill slot 13 for a new check.
+                    ESP_LOGW(TAG, "Checksum mismatch, sliding buffer by 1 byte");
+                    memmove(recv_buf_, recv_buf_ + 1, MsgLen - 1);
+                    recv_buf_len_ = MsgLen - 1;
+                }
             }
         }
 
