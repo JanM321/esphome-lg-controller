@@ -1366,11 +1366,12 @@ private:
         }
         */
         while (UARTDevice::available() > 0) {
-          uint8_t byte;
-          if (!UARTDevice::read_byte(&byte)) {
-            break;
-          }
-          add_received_byte(byte);
+            uint8_t byte;
+            if (!UARTDevice::read_byte(&byte)) {
+                break;
+            }
+            last_recv_millis_ = millis();
+            add_received_byte(byte);
         }
         parse_received_messages();
 
