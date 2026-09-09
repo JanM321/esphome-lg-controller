@@ -1352,19 +1352,6 @@ private:
         ESP_LOGD(TAG, "update");
 
         bool had_error = false;
-        /*
-        while (UARTDevice::available() > 0) {
-            if (!UARTDevice::read_byte(&recv_buf_[recv_buf_len_])) {
-                break;
-            }
-            last_recv_millis_ = millis();
-            recv_buf_len_++;
-            if (recv_buf_len_ == MsgLen) {
-                process_message(recv_buf_, &had_error);
-                recv_buf_len_ = 0;
-            }
-        }
-        */
         while (UARTDevice::available() > 0) {
             uint8_t byte;
             if (!UARTDevice::read_byte(&byte)) {
