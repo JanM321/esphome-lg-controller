@@ -57,7 +57,15 @@ You need at least the following parts for each indoor unit:
 
 The `hardware-tiny/` PCB can be ordered from [JLCPCB](https://cart.jlcpcb.com/quote/) (see instructions [here](https://github.com/JanM321/esphome-lg-controller/issues/2#issuecomment-1801803656)).
 
-## "hardware-FeatherS3" (May 2025)
+## "hardware-FeatherS3" (May 2025 - updated July 2026)
+
+* rev.20250519 (May 2025)
+
+This revision has a known issue: a 22 uF capacitor is missing at the regulator output (see [this comment](https://github.com/JanM321/esphome-lg-controller/issues/156#issuecomment-4621919638) for details). It is fairly straightforward to rework the PCB to add a capacitor, see [this comment](https://github.com/JanM321/esphome-lg-controller/issues/156#issuecomment-5004138957) for an example.
+
+* rev.20270717 (July 2026)
+
+This is the current revision. Note that the pictures below are for the older revision.
 
 <img src="hardware-FeatherS3/pcb-with-FeatherS3.jpg" width="400px" alt="PCB with FeatherS3">
 <img src="hardware-FeatherS3/pcb-top-and-bottom.jpg" width="400px" alt="PCB top and bottom">
@@ -112,7 +120,7 @@ Features currently available in Home Assistant:
 * Input fields for fan speed installer setting (to fine-tune fan speeds, 0-255 with 0 being factory default). This is installer setting 3 (ESP Setting) on LG controllers.
 * Select option for over heating installer setting from 0-4 (to change over heating behavior in heating mode). This is installer setting 15 (Over Heating) on LG controllers.
 * YAML options for Fahrenheit mode and 'slave' controller mode.
-* Detects & exposes only supported capabilities for the connected indoor unit.
+* Detects & exposes only supported operation/fan/swing modes for the connected indoor unit.
 
 The LG ThinQ app and wireless remote can still be used to change these settings and other settings. They'll be synchronized with this controller.
 

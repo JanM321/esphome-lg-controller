@@ -213,7 +213,6 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
     const bool slave_;
 
     enum class LgCapability {
-        PURIFIER,
         FAN_AUTO,
         FAN_SLOW,
         FAN_LOW,
@@ -225,20 +224,12 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
         MODE_FAN,
         MODE_AUTO,
         MODE_DEHUMIDIFY,
-        HAS_ONE_VANE,
-        HAS_TWO_VANES,
-        HAS_FOUR_VANES,
         VERTICAL_SWING,
         HORIZONTAL_SWING,
-        HAS_ESP_VALUE_SETTING,
-        OVERHEATING_SETTING,
-        AUTO_DRY,
     };
 
     bool parse_capability(LgCapability capability) {
         switch (capability) {
-            case LgCapability::PURIFIER:
-                return (nvs_storage_.capabilities_message[2] & 0x02) != 0;
             case LgCapability::FAN_AUTO:
                 return (nvs_storage_.capabilities_message[3] & 0x01) != 0;
             case LgCapability::FAN_SLOW:
@@ -261,26 +252,10 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
                 return (nvs_storage_.capabilities_message[2] & 0x08) != 0;
             case LgCapability::MODE_DEHUMIDIFY:
                 return (nvs_storage_.capabilities_message[2] & 0x80) != 0;
-            case LgCapability::HAS_ONE_VANE:
-                return (nvs_storage_.capabilities_message[5] & 0x40) != 0;
-            case LgCapability::HAS_TWO_VANES:
-                return (nvs_storage_.capabilities_message[5] & 0x80) != 0;
-            case LgCapability::HAS_FOUR_VANES:
-                // Actual flag is unknown, assume 4 vanes if neither 1 nor 2 vanes are supported
-                // and the vane control bit is set.
-                return (nvs_storage_.capabilities_message[5] & 0x40) == 0 &&
-                       (nvs_storage_.capabilities_message[5] & 0x80) == 0 &&
-                       (nvs_storage_.capabilities_message[4] & 0x01) != 0;
             case LgCapability::VERTICAL_SWING:
                 return (nvs_storage_.capabilities_message[1] & 0x80) != 0;
             case LgCapability::HORIZONTAL_SWING:
                 return (nvs_storage_.capabilities_message[1] & 0x40) != 0;
-            case LgCapability::HAS_ESP_VALUE_SETTING:
-                return (nvs_storage_.capabilities_message[4] & 0x02) != 0;
-            case LgCapability::OVERHEATING_SETTING:
-                return (nvs_storage_.capabilities_message[7] & 0x80) != 0;
-            case LgCapability::AUTO_DRY:
-                return (nvs_storage_.capabilities_message[4] & 0x80) != 0;
         }
         return false;
     }
@@ -354,57 +329,7 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
             if (parse_capability(LgCapability::HORIZONTAL_SWING))
                 override_swing_modes.insert(climate::CLIMATE_SWING_HORIZONTAL);
             supported_traits_.set_supported_swing_modes(override_swing_modes);
-
-            // Disable unsupported entities
-            vane_select_1_.set_internal(true);
-            vane_select_2_.set_internal(true);
-            vane_select_3_.set_internal(true);
-            vane_select_4_.set_internal(true);
-
-            if (parse_capability(LgCapability::HAS_ONE_VANE)) {
-                vane_select_1_.set_internal(false);
-            } else if (parse_capability(LgCapability::HAS_TWO_VANES)) {
-                vane_select_1_.set_internal(false);
-                vane_select_2_.set_internal(false);
-            } else if (parse_capability(LgCapability::HAS_FOUR_VANES)) {
-                vane_select_1_.set_internal(false);
-                vane_select_2_.set_internal(false);
-                vane_select_3_.set_internal(false);
-                vane_select_4_.set_internal(false);
-            }
-
-            fan_speed_slow_.set_internal(true);
-            fan_speed_low_.set_internal(true);
-            fan_speed_medium_.set_internal(true);
-            fan_speed_high_.set_internal(true);
-            overheating_select_.set_internal(true);
-
-            if (!slave_) {
-                if (parse_capability(LgCapability::HAS_ESP_VALUE_SETTING)) {
-                    if (parse_capability(LgCapability::FAN_SLOW)) {
-                        fan_speed_slow_.set_internal(false);
-                    }
-                    if (parse_capability(LgCapability::FAN_LOW)) {
-                        fan_speed_low_.set_internal(false);
-                    }
-                    if (parse_capability(LgCapability::FAN_MEDIUM)) {
-                        fan_speed_medium_.set_internal(false);
-                    }
-                    if (parse_capability(LgCapability::FAN_HIGH)) {
-                        fan_speed_high_.set_internal(false);
-                    }
-                }
-                if (parse_capability(LgCapability::OVERHEATING_SETTING)) {
-                    overheating_select_.set_internal(false);
-                }
-            }
-            purifier_.set_internal(!parse_capability(LgCapability::PURIFIER));
-            auto_dry_.set_internal(!parse_capability(LgCapability::AUTO_DRY));
-            auto_dry_active_.set_internal(!parse_capability(LgCapability::AUTO_DRY));
         }
-
-        internal_thermistor_.set_internal(slave_);
-        sleep_timer_.set_internal(slave_);
     }
 
 public:
@@ -458,19 +383,19 @@ public:
         fahrenheit_(fahrenheit),
         slave_(is_slave_controller)
     {
-        vane_select_1_.add_on_state_callback([this](std::string v, size_t index) {
+        vane_select_1_.add_on_state_callback([this](size_t index) {
             set_vane_position(1, index);
         });
-        vane_select_2_.add_on_state_callback([this](std::string v, size_t index) {
+        vane_select_2_.add_on_state_callback([this](size_t index) {
             set_vane_position(2, index);
         });
-        vane_select_3_.add_on_state_callback([this](std::string v, size_t index) {
+        vane_select_3_.add_on_state_callback([this](size_t index) {
             set_vane_position(3, index);
         });
-        vane_select_4_.add_on_state_callback([this](std::string v, size_t index) {
+        vane_select_4_.add_on_state_callback([this](size_t index) {
             set_vane_position(4, index);
         });
-        overheating_select_.add_on_state_callback([this](std::string v, size_t index) {
+        overheating_select_.add_on_state_callback([this](size_t index) {
             set_overheating(index);
         });
 
@@ -630,10 +555,6 @@ private:
         // 0 clears the timer. Accept max 7 hours.
         if (minutes < 0 || minutes > 7 * 60) {
             ESP_LOGE(TAG, "Ignoring invalid sleep timer value: %d minutes", minutes);
-            return;
-        }
-        if (slave_) {
-            ESP_LOGE(TAG, "Ignoring sleep timer for slave controller");
             return;
         }
         ESP_LOGD(TAG, "Setting sleep timer: %d minutes", minutes);
@@ -1251,13 +1172,11 @@ private:
         active_reservation_ = buffer[3] & 0x10;
 
         // Set or clear sleep timer.
-        if (!slave_) {
-            if (sleep_timer_target_millis_.has_value() && !active_reservation_) {
-                sleep_timer_.publish_state(0);
-            } else if (((buffer[8] >> 3) & 0x7) == 3) {
-                uint32_t minutes = (uint32_t(buffer[8] & 0x7) << 8) | buffer[9];
-                sleep_timer_.publish_state(minutes);
-            }
+        if (sleep_timer_target_millis_.has_value() && !active_reservation_) {
+            sleep_timer_.publish_state(0);
+        } else if (((buffer[8] >> 3) & 0x7) == 3) {
+            uint32_t minutes = (uint32_t(buffer[8] & 0x7) << 8) | buffer[9];
+            sleep_timer_.publish_state(minutes);
         }
 
         publish_state();
@@ -1414,26 +1333,17 @@ private:
         static_assert(PipeTempTable[UINT8_MAX] == INT8_MIN);
 
         int8_t pipe_temp_in = PipeTempTable[buffer[3]];
-        if (pipe_temp_in == INT8_MIN) {
-            pipe_temp_in_.set_internal(true);
-        } else {
-            pipe_temp_in_.set_internal(false);
+        if (pipe_temp_in != INT8_MIN) {
             pipe_temp_in_.publish_state(pipe_temp_in);
         }
 
         int8_t pipe_temp_out = PipeTempTable[buffer[4]];
-        if (pipe_temp_out == INT8_MIN) {
-            pipe_temp_out_.set_internal(true);
-        } else {
-            pipe_temp_out_.set_internal(false);
+        if (pipe_temp_out != INT8_MIN) {
             pipe_temp_out_.publish_state(pipe_temp_out);
         }
 
         int8_t pipe_temp_mid = PipeTempTable[buffer[5]];
-        if (pipe_temp_mid == INT8_MIN) {
-            pipe_temp_mid_.set_internal(true);
-        } else {
-            pipe_temp_mid_.set_internal(false);
+        if (pipe_temp_mid != INT8_MIN) {
             pipe_temp_mid_.publish_state(pipe_temp_mid);
         }
     }
@@ -1586,7 +1496,7 @@ private:
             return;
         }
         // Send a status message every 20 seconds.
-        // Slave controllers only send this if needed.
+        // Slave controllers only send a status message when settings are changed.
         if (!slave_ && millis_now - last_sent_status_millis_ > 20 * 1000) {
             if (check_can_send()) {
                 send_status_message();

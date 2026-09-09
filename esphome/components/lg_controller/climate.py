@@ -2,7 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import pins
 from esphome.components import binary_sensor, climate, number, select, sensor, switch, uart
-from esphome.const import CONF_ID, CONF_RX_PIN
+from esphome.const import CONF_ID, CONF_RX_PIN, CONF_INTERNAL
 
 CODEOWNERS = ["JanM321"]
 DEPENDENCIES = ["uart"]
@@ -94,6 +94,15 @@ async def to_code(config):
         temperature_sensor = await cg.get_variable(config[CONF_TEMPERATURE_SENSOR])
     else:
         temperature_sensor = cg.nullptr
+
+    # Hide entities not supported for 'slave' controllers.
+    if config[CONF_IS_SLAVE_CONTROLLER]:
+        config[CONF_FAN_SPEED_SLOW][CONF_INTERNAL] = True
+        config[CONF_FAN_SPEED_LOW][CONF_INTERNAL] = True
+        config[CONF_FAN_SPEED_MEDIUM][CONF_INTERNAL] = True
+        config[CONF_FAN_SPEED_HIGH][CONF_INTERNAL] = True
+        config[CONF_OVERHEATING][CONF_INTERNAL] = True
+        config[CONF_INTERNAL_THERMISTOR][CONF_INTERNAL] = True
 
     vane1 = await select.new_select(config[CONF_VANE1], options=VANE_OPTIONS)
     vane2 = await select.new_select(config[CONF_VANE2], options=VANE_OPTIONS)
