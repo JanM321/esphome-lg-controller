@@ -163,8 +163,10 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
     LgSwitch& internal_thermistor_;
     LgSwitch& auto_dry_;
 
-    uint8_t recv_buf_[MsgLen] = {};
-    uint32_t recv_buf_len_ = 0;
+    static constexpr size_t RxBufferLen = 64;
+
+    uint8_t recv_buf_[RxBufferLen] = {};
+    size_t recv_buf_len_ = 0;
     uint32_t last_recv_millis_ = 0;
 
     // Last received 0xC8 message.
@@ -876,6 +878,79 @@ private:
         last_sent_recv_type_b_millis_ = millis();
     }
 
+    static bool is_valid_message_start(uint8_t byte) {
+      // 0xC8-0xCF: unidad interior
+      // 0xA8-0xAF: controlador maestro
+      // 0x28-0x2F: controlador esclavo
+      return (byte & 0xF8) == 0xC8 ||
+             (byte & 0xF8) == 0xA8 ||
+             (byte & 0xF8) == 0x28;
+    }
+    
+    void discard_first_received_byte() {
+      if (recv_buf_len_ == 0) {
+        return;
+      }
+    
+      memmove(
+          recv_buf_,
+          recv_buf_ + 1,
+          recv_buf_len_ - 1
+      );
+    
+      recv_buf_len_--;
+    }
+
+    void parse_received_messages() {
+      while (recv_buf_len_ >= MsgLen) {
+        // Descartar bytes que no pueden ser el inicio de una trama.
+        if (!is_valid_message_start(recv_buf_[0])) {
+          discard_first_received_byte();
+          continue;
+        }
+    
+        // Tenemos 13 bytes y el primero parece válido.
+        if (calc_checksum(recv_buf_) != recv_buf_[MsgLen - 1]) {
+          ESP_LOGW(
+              TAG,
+              "Checksum incorrecto; desplazando un byte: %s",
+              format_hex_pretty(recv_buf_, MsgLen).c_str()
+          );
+    
+          discard_first_received_byte();
+          continue;
+        }
+    
+        // Copiar la trama para poder conservar el resto del buffer.
+        uint8_t message[MsgLen];
+        memcpy(message, recv_buf_, MsgLen);
+    
+        // Eliminar del buffer solamente los 13 bytes procesados.
+        const size_t remaining = recv_buf_len_ - MsgLen;
+    
+        memmove(
+            recv_buf_,
+            recv_buf_ + MsgLen,
+            remaining
+        );
+    
+        recv_buf_len_ = remaining;
+    
+        // Esta trama ya tiene checksum correcto.
+        bool had_error = false;
+        process_message(message, &had_error);
+      }
+    }
+
+    void add_received_byte(uint8_t byte) {
+      if (recv_buf_len_ >= RxBufferLen) {
+        ESP_LOGW(TAG, "Buffer de recepción lleno; descartando el byte más antiguo");
+        discard_first_received_byte();
+      }
+    
+      recv_buf_[recv_buf_len_++] = byte;
+    }
+
     void process_message(const uint8_t* buffer, bool* had_error) {
         ESP_LOGD(TAG, "received %s", format_hex_pretty(buffer, MsgLen).c_str());
 
@@ -1278,16 +1353,14 @@ private:
 
         bool had_error = false;
         while (UARTDevice::available() > 0) {
-            if (!UARTDevice::read_byte(&recv_buf_[recv_buf_len_])) {
+            uint8_t byte;
+            if (!UARTDevice::read_byte(&byte)) {
                 break;
             }
             last_recv_millis_ = millis();
-            recv_buf_len_++;
-            if (recv_buf_len_ == MsgLen) {
-                process_message(recv_buf_, &had_error);
-                recv_buf_len_ = 0;
-            }
+            add_received_byte(byte);
         }
+        parse_received_messages();
 
         // If we did not receive the message we sent last time, try to send it again next time.
         // Ignore this when we're initializing because the unit then immediately responds by
