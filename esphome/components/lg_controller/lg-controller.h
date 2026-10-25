@@ -166,6 +166,9 @@ class LgController final : public climate::Climate, public uart::UARTDevice, pub
     uint8_t recv_buf_[MsgLen] = {};
     uint32_t recv_buf_len_ = 0;
     uint32_t last_recv_millis_ = 0;
+    // Set while the parser publishes bus state into switches, so their callbacks don't queue a
+    // status change for it.
+    bool ignore_switch_callback_ = false;
 
     // Last received 0xC8 message.
     uint8_t last_recv_status_[MsgLen] = {};
@@ -413,14 +416,23 @@ public:
             set_sleep_timer(v);
         });
 
+        // Guard the switch callbacks with is_initializing_ (like the vane/fan speed setters):
+        // restoring the switches in setup() fires them, and a send queued before the first
+        // bus sync pushes stale state onto the unit.
         purifier_.add_on_state_callback([this](bool) {
-            pending_status_change_ = true;
+            if (!is_initializing_ && !ignore_switch_callback_) {
+                pending_status_change_ = true;
+            }
         });
         internal_thermistor_.add_on_state_callback([this](bool) {
-            pending_status_change_ = true;
+            if (!is_initializing_) {
+                pending_status_change_ = true;
+            }
         });
         auto_dry_.add_on_state_callback([this](bool) {
-            pending_type_a_settings_change_ = true;
+            if (!is_initializing_) {
+                pending_type_a_settings_change_ = true;
+            }
         });
     }
 
@@ -432,6 +444,12 @@ public:
         // Load our custom NVS storage to get the capabilities message
         ESPPreferenceObject pref = global_preferences->make_preference<NVSStorage>(this->get_object_id_hash() ^ NVS_STORAGE_VERSION);
         pref.load(&nvs_storage_);
+
+        // Configure climate traits and entities based on the capabilities message (if available).
+        // This must happen before restoring the state: ClimateDeviceRestoreState::apply() only
+        // restores a fan/swing mode the traits support, so with empty traits the fan mode was
+        // lost on every boot and the default (Medium) was sent to the unit.
+        configure_capabilities();
 
         auto restore = this->restore_state_();
         if (restore.has_value()) {
@@ -446,16 +464,22 @@ public:
 
         internal_thermistor_.restore_and_set_mode(esphome::switch_::SWITCH_RESTORE_DEFAULT_OFF);
 
+        // Publish without calling set_sleep_timer(), which would queue a status change.
+        ignore_sleep_timer_callback_ = true;
         sleep_timer_.publish_state(0);
-
-        // Configure climate traits and entities based on the capabilities message (if available)
-        configure_capabilities();
+        ignore_sleep_timer_callback_ = false;
 
         while (UARTDevice::available() > 0) {
             uint8_t b;
             UARTDevice::read_byte(&b);
         }
-        pending_status_change_ = true;
+        // The master controller asserts its state at startup. A slave must not: its restored
+        // state can be stale, and sending it with the changed flag overwrites the current
+        // settings (for example the fan speed was reset to Medium every time the slave
+        // rebooted). The slave adopts the state from the bus instead.
+        if (!slave_) {
+            pending_status_change_ = true;
+        }
 
         // Call `update` every 6 seconds, but first wait 10 seconds.
         set_timeout("initial_send", 10000, [this]() {
@@ -563,7 +587,9 @@ private:
             sleep_timer_target_millis_.reset();
             active_reservation_ = false;
         }
-        pending_status_change_ = true;
+        if (!is_initializing_) {
+            pending_status_change_ = true;
+        }
     }
 
     optional<float> get_room_temp() const {
@@ -1071,7 +1097,9 @@ private:
                 return;
         }
 
+        ignore_switch_callback_ = true;
         purifier_.publish_state(buffer[2] & 0x4);
+        ignore_switch_callback_ = false;
 
         bool horiz_swing = buffer[2] & 0x40;
         bool vert_swing = buffer[2] & 0x80;
