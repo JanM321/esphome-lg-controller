@@ -116,6 +116,8 @@ Features currently available in Home Assistant:
 * Switch and binary sensor for Auto Dry (also known as Auto Clean) feature. Used to dry indoor unit when it's turned off after cooling/dehumidifying.
 * Sensors for reporting outdoor unit on/off, defrost, preheat, error code.
 * Sensors for reporting in/mid/out pipe temperatures (if supported by unit).
+* Optional passive sensors for total energy and current power, if the unit emits `0xCC`
+  or `0xCF` frames on the wired-controller bus.
 * Input field for sleep timer from 0 to 420 minutes (0 turns off the sleep timer).
 * Input fields for fan speed installer setting (to fine-tune fan speeds, 0-255 with 0 being factory default). This is installer setting 3 (ESP Setting) on LG controllers.
 * Select option for over heating installer setting from 0-4 (to change over heating behavior in heating mode). This is installer setting 15 (Over Heating) on LG controllers.
@@ -125,6 +127,10 @@ Features currently available in Home Assistant:
 The LG ThinQ app and wireless remote can still be used to change these settings and other settings. They'll be synchronized with this controller.
 
 Unfortunately not all settings are exposed to the wired controller, but if you're interested in a feature and it's supported by the PREMTB100 or PREMTA200 controller, please open an issue and we can consider adding it.
+
+The optional energy/power sensors only publish values for units that send the relevant wired-bus
+frames. Some LG units expose energy data through ThinQ/WiFi but do not send `0xCC` or `0xCF`
+frames to the wired controller; for those units these sensors will not update.
 
 # Tips
 * [Issue #43](https://github.com/JanM321/esphome-lg-controller/issues/43) has some information on temperature sensors that work well for this.
