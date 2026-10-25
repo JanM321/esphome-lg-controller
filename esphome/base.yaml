@@ -105,6 +105,7 @@ climate:
       name: Error Code
       id: error_code
       icon: mdi:alert-circle-outline
+      accuracy_decimals: 0
     pipe_temp_in:
       name: Pipe Temperature In
       id: pipe_temperature_in
@@ -120,6 +121,18 @@ climate:
       id: pipe_temperature_out
       icon: mdi:thermometer
       unit_of_measurement: "°C"
+    humidity:
+      name: Humidity
+      id: humidity
+    fan_operation_time:
+      name: Fan Operation Time
+      id: fan_operation_time
+    indoor_unit_operation_time:
+      name: Indoor Unit Operation Time
+      id: indoor_unit_operation_time
+    precise_room_temperature:
+      name: Precise Room Temperature
+      id: precise_room_temperature
     defrost:
       name: Defrost
       id: defrost
