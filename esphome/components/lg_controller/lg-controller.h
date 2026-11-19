@@ -879,9 +879,9 @@ private:
     }
 
     static bool is_valid_message_start(uint8_t byte) {
-      // 0xC8-0xCF: unidad interior
-      // 0xA8-0xAF: controlador maestro
-      // 0x28-0x2F: controlador esclavo
+      // 0xC8-0xCF: indoor unit
+      // 0xA8-0xAF: master controller
+      // 0x28-0x2F: slave controller
       return (byte & 0xF8) == 0xC8 ||
              (byte & 0xF8) == 0xA8 ||
              (byte & 0xF8) == 0x28;
@@ -903,17 +903,17 @@ private:
 
     void parse_received_messages() {
       while (recv_buf_len_ >= MsgLen) {
-        // Descartar bytes que no pueden ser el inicio de una trama.
+        // Discard bytes that do not match the start of a frame.
         if (!is_valid_message_start(recv_buf_[0])) {
           discard_first_received_byte();
           continue;
         }
     
-        // Tenemos 13 bytes y el primero parece válido.
+        // We have 13 bytes and the first seems to be valid.
         if (calc_checksum(recv_buf_) != recv_buf_[MsgLen - 1]) {
           ESP_LOGW(
               TAG,
-              "Checksum incorrecto; desplazando un byte: %s",
+              "Incorrect checksum; shifting one byte: %s",
               format_hex_pretty(recv_buf_, MsgLen).c_str()
           );
     
@@ -921,11 +921,11 @@ private:
           continue;
         }
     
-        // Copiar la trama para poder conservar el resto del buffer.
+        // Copy the trace so you can preserve the rest of the buffer.
         uint8_t message[MsgLen];
         memcpy(message, recv_buf_, MsgLen);
     
-        // Eliminar del buffer solamente los 13 bytes procesados.
+        // Remove only the 13 processed bytes from the buffer.
         const size_t remaining = recv_buf_len_ - MsgLen;
     
         memmove(
@@ -936,7 +936,7 @@ private:
     
         recv_buf_len_ = remaining;
     
-        // Esta trama ya tiene checksum correcto.
+        // This frame already has a valid checksum.
         bool had_error = false;
         process_message(message, &had_error);
       }
@@ -944,7 +944,7 @@ private:
 
     void add_received_byte(uint8_t byte) {
       if (recv_buf_len_ >= RxBufferLen) {
-        ESP_LOGW(TAG, "Buffer de recepción lleno; descartando el byte más antiguo");
+        ESP_LOGW(TAG, "Receive buffer full; discarding the oldest byte.");
         discard_first_received_byte();
       }
     
