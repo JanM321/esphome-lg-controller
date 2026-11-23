@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esphome.h"
+#include "esphome/core/alloc_helpers.h"
 #include "esphome/components/uart/uart.h"
 
 static const char* const TAG = "lg-controller";
